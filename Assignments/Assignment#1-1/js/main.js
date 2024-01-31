@@ -80,15 +80,12 @@ function updateThree() {
       if (size[layer] >= sizeRange[layer] || size[layer] <= 0) {
         grow[layer] *= -1;
       }
-
       size[layer] += grow[layer];
       cube.scale.set(size[layer], size[layer], size[layer]);
       cube.rotation.z += 0.01;
       cube.position.z = sin(radians(zPosDeg[layer])) * 300;
     }
   }
-  // console.log(zPosDeg[0]);
-  // console.log("size", size);
 
 }
 
