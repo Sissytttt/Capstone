@@ -15,7 +15,7 @@ function setupThree() {
       .setRotVel(random(-0.01, 0.01), random(-0.01, 0.01), random(-0.01, 0.01));
     cubes.push(cube);
   }
-  console.log(cubes[0].pos.x); // ??? print mesh's position for debugging
+  console.log(cubes[0].pos.x); //print mesh's position for debugging
 }
 
 
