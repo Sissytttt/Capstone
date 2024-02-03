@@ -15,7 +15,7 @@ function setupThree() {
       .setRotVel(random(-0.01, 0.01), random(-0.01, 0.01), random(-0.01, 0.01));
     cubes.push(cube);
   }
-  // console.log(cubes);
+  console.log(cubes[0].pos.x); // ??? print mesh's position for debugging
 }
 
 
@@ -26,6 +26,7 @@ function updateThree() {
     c.move();
     c.rotate();
   }
+  console.log(cubes[0].pos.x);
 }
 
 
@@ -43,7 +44,7 @@ function getBox() {
 
 // mesh is an attribute for the class
 // need to have the update() to update the mesh to the position
-//define the var at constructor; setup; update; 
+// define the var at constructor; setup; update; 
 
 class Box {
   constructor() {
@@ -71,7 +72,7 @@ class Box {
     return this;
   }
 
-  setRot(x, y, z) { // rotation velocity
+  setRot(x, y, z) { // angle
     this.rot = createVector(x, y, z);
     return this;
   }
