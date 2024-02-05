@@ -6,7 +6,7 @@ let balls = [];
 const mouse = new THREE.Vector3();
 
 function setupThree() {
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 10; i++) {
     let b = new Ball()
       .setPos(random(-1000, 1000), random(-1000, 1000), random(-1000, 1000))
       .setDir()
@@ -51,8 +51,6 @@ class Ball {
 
   setPos(x, y, z) {
     this.pos = createVector(x, y, z);
-    // this.mesh.position.set(this.pos.x, this.pos.y, this.pos.z);
-    // console.log(this.pos.x);
     return this;
   }
 
@@ -68,7 +66,6 @@ class Ball {
 
   setScl(x, y = x, z = x) {
     this.scl = createVector(x, y, z);
-    this.mesh.scale.set(this.scl.x, this.scl.y, this.scl.z);
     return this;
   }
 
@@ -76,7 +73,7 @@ class Ball {
     this.dir.x = mouse.x;
     this.dir.y = mouse.y;
     this.dir.z = 0;
-    // console.log(this.dir.x, this.dir.y);f
+    // console.log(this.dir.x, this.dir.y);
     this.dir.sub(this.pos);
     this.dir.normalize().div(5);
     this.spd.add(this.dir);
@@ -87,7 +84,6 @@ class Ball {
   update() {
     this.mesh.position.set(this.pos.x, this.pos.y, this.pos.z);
     this.mesh.scale.set(this.scl.x, this.scl.y, this.scl.z);
-    // console.log(this.pos.x);
   }
 }
 
