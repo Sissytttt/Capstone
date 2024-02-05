@@ -12,15 +12,26 @@ function setupThree() {
       .setScl(2);
     balls.push(b);
   }
-  // console.log(balls[0]);
+  // console.log(balls[balls.length]);
 }
 
 function updateThree() {
   for (let b of balls) {
     b.turn();
     b.update();
-
+    b.age();
   }
+
+  for (let i = balls.length - 1; i >= 0; i--) {
+    let b = balls[i];
+    // console.log(b);
+    if (b.isDone) {
+      scene.remove(b.mesh);
+      balls.splice(i, 1);
+      // console.log("-1");
+    }
+  }
+
 }
 
 function getSphere() {
@@ -46,6 +57,12 @@ class Ball {
     this.vel_top;
     this.mesh = getSphere();
     this.scl = createVector();
+
+    this.lifespan = 1.0;
+    this.lifeReduction = random(0.005, 0.0001);
+    // this.lifeReduction = random(0.05, 0.1);
+    this.isDone = false;
+
   }
 
   setR(r) {
@@ -74,6 +91,14 @@ class Ball {
   setScl(x, y = x, z = x) {
     this.scl = createVector(x, y, z);
     return this;
+  }
+
+  age() {
+    this.lifespan -= this.lifeReduction;
+    if (this.lifespan <= 0) {
+      this.lifespan = 0;
+      this.isDone = true;
+    }
   }
 
   turn() {
