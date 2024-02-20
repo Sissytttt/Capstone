@@ -30,7 +30,6 @@ function updateThree() {
 
   frame += 1;
 
-
   let gravity = createVector(0, -1, 0);
   for (const p of particles) {
     p.updateAcc();
