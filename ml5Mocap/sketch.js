@@ -24,9 +24,19 @@
 let video;
 let width = 640, height = 480;
 let bodypose;
-let get_points = ["nose", "left_wrist", "right_wrist", "left_foot_index", "right_foot_index"];
+let get_points = ["nose", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist"];
 // let get_points = ["nose"];
-let mass_arr = { nose: 3, left_wrist: 2, right_wrist: 2, left_foot_index: 4, right_foot_index: 4 };
+let mass_arr = {
+  nose: 3,
+  left_shoulder: 4,
+  right_shoulder: 4,
+  left_elbow: 3,
+  right_elbow: 3,
+  left_wrist: 2,
+  right_wrist: 2,
+  left_foot_index: 3,
+  right_foot_index: 3
+};
 let poses = [];
 let prev_poses = [];
 let keypoints = {};
@@ -35,6 +45,15 @@ let WEIGHT, SPACE, TIME, FLOW;
 let MAPD_WEIGHT, MAPD_SPACE, MAPD_TIME, MAPD_FLOW;
 let MAX_ACC_BODYPART; // body part that has max ACC value
 
+// need calibration ***
+let max_weight = 3000;
+let min_weight = 0;
+let max_distance = 500000;
+let min_distance = 0;
+let max_time = 100;
+let min_time = 0;
+let max_flow = 100;
+let min_flow = 0;
 
 
 function preload() {
@@ -103,17 +122,19 @@ function gotPoses(results) {
 
 // --------------setup keypoints-----------------
 // -------keypoints array & simple keypoints array--------
-function setKeypointsPos(pose_array, prev_pose_array) {
+function setKeypointsPos(pose_array) {
   for (let i = 0; i < pose_array.keypoints.length; i++) {
     let point = pose_array.keypoints[i];
-    if (point.name in keypoints) {
+    if (point.name in keypoints && keypoints[point.name] != undefined) {
       if (point.score > 0.1) {
         keypoints[point.name].setPos(point.x, point.y, point.z);
+        keypoints[point.name].setScore(point.score);
       }
     }
-    if (point.name in simple_keypoints) {
+    if (point.name in simple_keypoints && keypoints[point.name] != undefined) {
       if (point.score > 0.1) {
         simple_keypoints[point.name].setPos(point.x, point.y, point.z);
+        keypoints[point.name].setScore(point.score);
       }
     }
   }
@@ -163,16 +184,20 @@ function calcVals() {
   let timeResult = calcTime();
   TIME = timeResult.TIME;
   MAX_ACC_BODYPART = timeResult.MAX_ACC_BODYPART;
-  // console.log(TIME);
   FLOW = calcFlow();
 }
 
 function calcWeight() {
   total_energy = 0;
+  total_item_num = 0;
   for (const bodypart in keypoints) {
-    total_energy += keypoints[bodypart].energy;
+    if (keypoints[bodypart].score > 0.75) {
+      total_energy += keypoints[bodypart].energy;
+      total_item_num += 1;
+    }
   }
-  return total_energy;
+  let ave_energy = total_energy / total_item_num;
+  return ave_energy;
 }
 
 function calcSpace() {
@@ -190,8 +215,7 @@ function calcSpace() {
   }
 }
 
-
-function calcTime() { // Time = mas(Mass * Acc)
+function calcTime() { // Time = max(Mass * Acc)
   let max_time = 0;
   let max_bodypart = null;
   for (const bodypart in keypoints) {
@@ -226,29 +250,21 @@ function mapVals() {
 }
 
 function mapWeight(min, max) {
-  let max_weight = 40000; // need calibration ***
-  let min_weight = 0;
   let mapped_weight = map(WEIGHT, min_weight, max_weight, min, max);
   return mapped_weight;
 }
 
 function mapSpace(min, max) {
-  let max_distance = 500000; // need calibration ***
-  let min_distance = 0;
   let mapped_space = map(SPACE, min_distance, max_distance, min, max);
   return mapped_space;
 }
 
 function mapTime(min, max) {
-  let max_time = 100; // need calibration ***
-  let min_time = 0;
   let mapped_time = map(TIME, min_time, max_time, min, max);
   return mapped_time;
 }
 
 function mapFlow(min, max) {
-  let max_flow = 100; // need calibration ***
-  let min_flow = 0;
   let mapped_flow = map(FLOW, min_flow, max_flow, min, max);
   return mapped_flow;
 }
@@ -287,7 +303,7 @@ function visTime(min, max) {
   MAPD_TIME = mapTime(min, max);
   let alpha = mapTime(100, 255);
   if (MAX_ACC_BODYPART != null) {
-    console.log(MAX_ACC_BODYPART);
+    // console.log(MAX_ACC_BODYPART);
     // console.log(TIME);
     let circle_pos = keypoints[MAX_ACC_BODYPART].pos;
     // console.log(circle_pos.toString());
@@ -305,6 +321,7 @@ function visFlow() {
 class Node {
   constructor(name) {
     this.name = name;
+    this.score = 0;
     this.pos = createVector();
     this.prev_pos = createVector();
     this.vel = createVector();
@@ -315,6 +332,10 @@ class Node {
 
     this.mass = 0;
     this.energy = 0;
+  }
+
+  setScore(score) {
+    this.score = score;
   }
 
   setMass(m) {
@@ -369,11 +390,16 @@ class Node {
 class SimpleNode {
   constructor(name) {
     this.name = name;
+    this.score = 0;
     this.pos = createVector();
   }
 
   setPos(x, y, z) {
     this.pos.set(x, y, z);
+  }
+
+  setScore(score) {
+    this.score = score;
   }
 }
 
