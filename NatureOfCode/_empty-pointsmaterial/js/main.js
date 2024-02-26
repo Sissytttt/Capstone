@@ -1,3 +1,6 @@
+// 改：
+// 1. MAX_PARTICLE_NUMBER -> PARTICLE_NUMBER
+
 let params = {
   MAX_PARTICLE_NUMBER: 1000,
   particleNum: 0,
@@ -12,10 +15,10 @@ let particles = [];
 function setupThree() {
   // initialize particles
   for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
-    let tParticle = new Particle()
-      .setPosition(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
-      .setVelocity(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
-    particles.push(tParticle);
+    let p = new Particle()
+      .setPos(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
+      .setVel(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
+    particles.push(p);
   }
 
   // Points
@@ -27,7 +30,7 @@ function setupThree() {
   folderBasic.open();
   folderBasic.add(params, "MAX_PARTICLE_NUMBER", 0, params.MAX_PARTICLE_NUMBER).step(1).listen();
   folderBasic.add(params, "particleNum").listen();
-  gui.addColor(params, 'color');
+  folderBasic.addColor(params, 'color');
 
 }
 
@@ -37,10 +40,10 @@ function updateThree() {
 
   // generate new particles
   while (particles.length < params.MAX_PARTICLE_NUMBER) {
-    let tParticle = new Particle()
-      .setPosition(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
-      .setVelocity(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
-    particles.push(tParticle);
+    let p = new Particle()
+      .setPos(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
+      .setVel(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
+    particles.push(p);
   }
 
   // update the Particles class
@@ -48,7 +51,6 @@ function updateThree() {
     let p = particles[i];
     p.attractedTo(0, 0, 0);
     p.setColor(red(c), green(c), blue(c));
-    // console.log(red(c), green(c), blue(c));
     p.move();
     p.age();
     if (p.isDone) {
@@ -100,11 +102,14 @@ function getPoints(objects) {
 
     map: texture
   });
+
   // Points
   const points = new THREE.Points(geometry, material);
   return points;
 }
 
+
+// ==============================================================
 class Particle {
   constructor() {
     this.pos = createVector();
@@ -124,11 +129,11 @@ class Particle {
       b: 255
     };
   }
-  setPosition(x, y, z) {
+  setPos(x, y, z) {
     this.pos = createVector(x, y, z);
     return this;
   }
-  setVelocity(x, y, z) {
+  setVel(x, y, z) {
     this.vel = createVector(x, y, z);
     return this;
   }

@@ -11,11 +11,6 @@ function setupThree() {
 }
 
 function updateThree() {
-  // update the mesh
-  //pointCloud.position.x += 1;
-  //pointCloud.rotation.x += 0.01;
-  //pointCloud.rotation.z += 0.02;
-
   // update the individual points
   let positionArray = pointCloud.geometry.attributes.position.array;
   for (let i = 0; i < positionArray.length; i += 3) {
