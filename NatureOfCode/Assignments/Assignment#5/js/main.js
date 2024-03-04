@@ -1,5 +1,5 @@
 let params = {
-  PARTICLE_NUMBER: 1000,
+  PARTICLE_NUMBER: 3000,
   particleNum: 0,
   color: "#FFFFFF"
 };
@@ -13,8 +13,16 @@ function setupThree() {
   // initialize particles
   for (let i = 0; i < params.PARTICLE_NUMBER; i++) {
     let p = new Particle()
-      .setPos(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
-      .setVel(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
+      .setPos(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), 0, 0)
+      .setVel(0, 0, 0);
+    let randomVal = random(-1, 1);
+    // p.setWave(0.02, 0.01, 50);
+    if (randomVal > 0) {
+      p.setWave(0.01, 0.011, 50);
+    }
+    else {
+      p.setWave(0.02, 0.01, 50);
+    }
     particles.push(p);
   }
 
@@ -28,32 +36,19 @@ function setupThree() {
   folderBasic.add(params, "PARTICLE_NUMBER", 0, params.PARTICLE_NUMBER).step(1).listen();
   folderBasic.add(params, "particleNum").listen();
   folderBasic.addColor(params, 'color');
-
 }
 
 function updateThree() {
   // set GUI variables
   let c = color(params.color);
 
-  // generate new particles
-  while (particles.length < params.PARTICLE_NUMBER) {
-    let p = new Particle()
-      .setPos(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
-      .setVel(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
-    particles.push(p);
-  }
-
   // update the Particles class
   for (let i = 0; i < particles.length; i++) {
     let p = particles[i];
-    p.attractedTo(0, 0, 0);
     p.setColor(red(c), green(c), blue(c));
     p.move();
-    p.age();
-    if (p.isDone) {
-      particles.splice(i, 1);
-      i--; // not flipped version
-    }
+    p.wave();
+    p.flow();
   }
 
   // Update the particle class to points materials
@@ -105,6 +100,8 @@ function getPoints(objects) {
   return points;
 }
 
+// ==============================================================
+
 
 // ==============================================================
 class Particle {
@@ -113,18 +110,19 @@ class Particle {
     this.vel = createVector();
     this.acc = createVector();
 
-    this.scl = createVector(1, 1, 1);
-    this.mass = this.scl.x * this.scl.y * this.scl.z;
-
-    this.lifespan = 1.0;
-    this.lifeReduction = random(0.001, 0.005);
-    this.isDone = false;
-
     this.color = {
       r: 255,
       g: 255,
       b: 255
     };
+    // wave
+    this.Wvel = 0; // * frameCount // big = fast
+    this.Wlen = 0; // * this.pos.x // big = short
+    this.Wamp = 1;
+    this.WfreqAdj = 1;
+    this.WampAdj = 1;
+    this.Wfreq = 0; // Freq = Vel/Len
+    // particles.push(this);
   }
   setPos(x, y, z) {
     this.pos = createVector(x, y, z);
@@ -138,16 +136,17 @@ class Particle {
     this.color.r = r;
     this.color.g = g;
     this.color.b = b;
-  }
-  setScale(w, h = w, d = w) {
-    const minScale = 0.01;
-    if (w < minScale) w = minScale;
-    if (h < minScale) h = minScale;
-    if (d < minScale) d = minScale;
-    this.scl = createVector(w, h, d);
-    this.mass = this.scl.x * this.scl.y * this.scl.z;
     return this;
   }
+  setWave(Wvel, Wlen, Wamp, WfreqAdj = 1, WampAdj = 1) {
+    this.Wvel = Wvel;
+    this.Wlen = Wlen;
+    this.Wamp = Wamp;
+    this.WfreqAdj = WfreqAdj;
+    this.WampAdj = WampAdj;
+    return this;
+  }
+
   move() {
     this.vel.add(this.acc);
     this.pos.add(this.vel);
@@ -155,29 +154,24 @@ class Particle {
   }
   applyForce(f) {
     let force = f.copy();
-    force.div(this.mass);
     this.acc.add(force);
   }
-  disappear() {
-    if (this.pos.z > WORLD_SIZE / 2) {
-      this.isDone = true;
-    }
+
+  wave() {
+    let sinForFreq = sin(this.Wvel * frame) * 0.4;
+    this.Wfreq = (frame * this.Wvel + this.pos.x * this.Wlen) * this.WfreqAdj + sinForFreq;
+    let sinValue = sin(this.Wfreq) * this.Wamp;
+    this.pos.y = sinValue;
   }
-  age() {
-    this.lifespan -= this.lifeReduction;
-    if (this.lifespan <= 0) {
-      this.lifespan = 0;
-      this.isDone = true;
-    }
-  }
-  attractedTo(x, y, z) {
-    let target = new p5.Vector(x, y, z);
-    let force = p5.Vector.sub(target, this.pos);
-    if (force.mag() < 100) {
-      force.mult(-0.005);
-    } else {
-      force.mult(0.0001);
-    }
+
+  flow() {
+    let xFreq = this.pos.x * 0.05 + frame * 0.005;
+    let yFreq = this.pos.y * 0.05 + frame * 0.005;
+    let zFreq = this.pos.z * 0.05 + frame * 0.005;
+    let noiseValue = map(noise(xFreq, yFreq), 0.0, 1.0, -1.0, 1.0);
+    let force = new p5.Vector(cos(frame * 0.005), sin(frame * 0.005), sin(frame * 0.005));
+    force.normalize();
+    force.mult(noiseValue * 0.01);
     this.applyForce(force);
   }
 }

@@ -1,10 +1,11 @@
 let params = {
-  PARTICLE_NUMBER: 1000,
+  PARTICLE_NUMBER: 10000,
   particleNum: 0,
   color: "#FFFFFF"
 };
 
-const WORLD_SIZE = 1000;
+const WORLD_WIDTH = 900;
+const WORLD_LENGTH = 1600;
 
 let pointCloud;
 let particles = [];
@@ -13,8 +14,7 @@ function setupThree() {
   // initialize particles
   for (let i = 0; i < params.PARTICLE_NUMBER; i++) {
     let p = new Particle()
-      .setPos(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
-      .setVel(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
+      .setPos(random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2), random(-WORLD_WIDTH / 2, WORLD_WIDTH / 2), 0)
     particles.push(p);
   }
 
@@ -38,18 +38,19 @@ function updateThree() {
   // generate new particles
   while (particles.length < params.PARTICLE_NUMBER) {
     let p = new Particle()
-      .setPos(random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2), random(-WORLD_SIZE / 2, WORLD_SIZE / 2))
-      .setVel(random(-0.5, 0.5), random(-0.5, 0.5), random(-0.5, 0.5))
+      .setPos(random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2), WORLD_WIDTH / 2, 0)
     particles.push(p);
   }
 
   // update the Particles class
   for (let i = 0; i < particles.length; i++) {
     let p = particles[i];
-    p.attractedTo(0, 0, 0);
     p.setColor(red(c), green(c), blue(c));
     p.move();
-    p.age();
+    // p.movedown1(1);
+    p.movedown2(4);
+    p.disappear();
+    // p.age();
     if (p.isDone) {
       particles.splice(i, 1);
       i--; // not flipped version
@@ -88,7 +89,7 @@ function getPoints(objects) {
   const texture = new THREE.TextureLoader().load('assets/particle_texture.jpg');
   const material = new THREE.PointsMaterial({
     vertexColors: true,
-    // size: random(1, 5),
+    size: random(1, 3),
     // sizeAttenuation: true,
 
     //opacity: 0.50,
@@ -113,7 +114,7 @@ class Particle {
     this.vel = createVector();
     this.acc = createVector();
 
-    this.scl = createVector(1, 1, 1);
+    this.scl = createVector(5, 5, 5);
     this.mass = this.scl.x * this.scl.y * this.scl.z;
 
     this.lifespan = 1.0;
@@ -148,36 +149,65 @@ class Particle {
     this.mass = this.scl.x * this.scl.y * this.scl.z;
     return this;
   }
+  // movedown1(vel) {
+  //   let xFreq = (-WORLD_LENGTH + this.pos.x) * 0.005;
+  //   let yFreq = (-WORLD_WIDTH + this.pos.y) * 0.008;
+  //   let noiseValue = noise(xFreq, yFreq);
+  //   if (noiseValue < 0.2) {
+  //     vel = map(noiseValue, 0, 0.2, 0 * vel, 0.01 * vel);
+  //   }
+  //   else if (noiseValue < 0.5) {
+  //     vel = map(noiseValue, 0.2, 0.5, 0.01 * vel, 0.3 * vel)
+  //   }
+  //   else {
+  //     vel = map(noiseValue, 0.5, 1, 0.3 * vel, 0.4 * vel)
+  //   }
+  //   this.vel.y = -vel;
+  // }
+
+  movedown2(v) {
+    let moveFreqX = (-WORLD_LENGTH + this.pos.x) * 0.01; // 整体 move downward
+    let moveFreqY = (-WORLD_WIDTH + this.pos.y) * 0.01 + frame * 0.01;
+    let moveNoise = noise(moveFreqX, moveFreqY);
+    let moveAdj;
+    if (moveNoise < 0.4) {
+      moveAdj = map(moveNoise, 0, 0.4, 0, 0.7);
+    }
+    else {
+      moveAdj = map(moveNoise, 0.4, 1, 0.7, 1.2);
+    }
+    let velFreqX = (-WORLD_LENGTH + this.pos.x + 1000) * 0.005; // each partile move downward
+    let velFreqY = (-WORLD_WIDTH + this.pos.y + 1000) * 0.008 + moveAdj;
+    let velNoise = noise(velFreqX, velFreqY);
+    let vel;
+    if (velNoise < 0.2) {
+      vel = map(velNoise, 0, 0.2, 0 * v, 0.01 * v);
+    }
+    else if (velNoise < 0.5) {
+      vel = map(velNoise, 0.2, 0.5, 0.01 * v, 0.2 * v);
+    }
+    else if (velNoise < 0.8) {
+      vel = map(velNoise, 0.5, 0.8, 0.2 * v, 0.5 * v);
+    }
+    else {
+      vel = map(velNoise, 0.8, 1, 0.5 * v, 1 * v);
+    }
+    this.vel.y = -vel;
+  }
   move() {
     this.vel.add(this.acc);
     this.pos.add(this.vel);
     this.acc.mult(0);
   }
+
   applyForce(f) {
     let force = f.copy();
     force.div(this.mass);
     this.acc.add(force);
   }
   disappear() {
-    if (this.pos.z > WORLD_SIZE / 2) {
+    if (this.pos.y < -WORLD_WIDTH / 2) {
       this.isDone = true;
     }
-  }
-  age() {
-    this.lifespan -= this.lifeReduction;
-    if (this.lifespan <= 0) {
-      this.lifespan = 0;
-      this.isDone = true;
-    }
-  }
-  attractedTo(x, y, z) {
-    let target = new p5.Vector(x, y, z);
-    let force = p5.Vector.sub(target, this.pos);
-    if (force.mag() < 100) {
-      force.mult(-0.005);
-    } else {
-      force.mult(0.0001);
-    }
-    this.applyForce(force);
   }
 }
