@@ -3,7 +3,7 @@ let params = {
   particleNum: 0,
 };
 
-const START_NUM_P = 1000;
+const START_NUM_P = 10000;
 const TOTAL_NUM_OF_P = 3000;
 const WORLD_WIDTH = 1600;
 const WORLD_HEIGHT = 900;
@@ -17,7 +17,10 @@ function setupThree() {
   scene.add(pointCloud);
 
   for (let i = 0; i < START_NUM_P; i++) {
-    p = new Particle().setup();
+    p = new Particle()
+      .setCen(0, 0, 0)
+      .setPos(800, 1000, 50)
+      .setVelMag(random(3, 5));
     particles.push(p);
   }
 
@@ -25,18 +28,12 @@ function setupThree() {
 
 //----------------------------------------------------
 function updateThree() {
-  p = new Particle().setup();
-  particles.push(p);
-  let center = createVector(0, 0, 0);
   for (const p of particles) {
-    p.formCircle();
-    p.circlularMovement(0, 0, 0, 500, 300);
-    // p.attractedTo(0, 0, 0);
-    p.update();
-    p.updateLifespan();
+    p.flow();
+    p.attractToBase(50);
+    p.updateBase(sin(frame * 0.03));
+    p.move();
   }
-
-  // console.log(particles[1].cen.x)
 
   // remove
   for (let i = 0; i < particles.length; i++) {
@@ -90,6 +87,8 @@ function getPoints(maxNum) {
     transparent: true,
     opacity: 0.9,
 
+    size: 2,
+
     depthTest: false,
     blending: THREE.AdditiveBlending,
   });
@@ -101,6 +100,10 @@ function getPoints(maxNum) {
 class Particle {
   constructor() {
     this.pos = createVector();
+    this.base_pos = createVector();
+    this.rCircle = 0;
+    this.RCircle = 0;
+    this.r = 0;
     this.vel = createVector();
     this.acc = createVector();
     //
@@ -118,22 +121,67 @@ class Particle {
     this.isDone = false;
   }
 
-  setup() {
-    this.pos = createVector(random(- WORLD_WIDTH / 2, WORLD_WIDTH / 2), random(-WORLD_HEIGHT / 2, WORLD_HEIGHT / 2), 0);
-    this.cen = createVector(0, 0, 0);
-    this.dist = p5.Vector.sub(this.cen, this.pos);
-    this.vel = createVector(0, 0, 0);
+  setCen(x, y, z) {
+    this.cen = createVector(x, y, z);
+    return this;
+  }
+
+  setVelMag(val) {
+    this.vel_mag = val;
+    return this;
+  }
+
+  setPos(r, R, sd) {
+    // // normal
+    // let angle = radians(random(360));
+    // this.base_pos = createVector(sin(angle) * random(this.startR, this.startR + 300), cos(angle) * random(this.startR, this.startR + 300), 0);
+    // this.pos.set(this.base_pos);
+    //
+    this.rCircle = r;
+    this.RCircle = R;
+    this.angle = radians(random(360));
+    let outer = abs(randomGaussian(0, sd));
+    if (outer > this.RCircle - this.rCircle) {
+      outer = this.RCircle - this.rCircle;
+    }
+    this.r = this.rCircle + outer;
+    let xPos = sin(this.angle) * this.r;
+    let yPos = cos(this.angle) * this.r;
+    this.base_pos = createVector(xPos, yPos, 0);
+    this.pos.set(this.base_pos);
+
     return this;
   }
 
   updateLifespan() {
-    if (this.pos.y < -500) {
-      if (this.lifespan > 0) {
-        this.lifespan -= this.lifeReduction;
-      } else {
-        this.lifespan = 0;
-        this.isDone = true;
-      }
+    if (this.lifespan > 0) {
+      this.lifespan -= this.lifeReduction;
+    } else {
+      this.lifespan = 0;
+      this.isDone = true;
+    }
+  }
+
+  flow() {
+    let xFreq = this.pos.x * 0.005 + frame * 0.0000001;
+    let yFreq = this.pos.y * 0.005 + frame * 0.0000001;
+    let noiseValueX = map(noise(xFreq, yFreq), 0.0, 1.0, -1.0, 1.0);
+    let noiseValueY = map(noise(xFreq + 1000, yFreq + 1000), 0.0, 1.0, -1.0, 1.0);
+    let force = new p5.Vector(noiseValueX, noiseValueY, 0);
+    force.normalize();
+    force.mult(0.0005);
+    this.applyForce(force);
+  }
+
+  attractToBase(range) {
+    let dist = this.pos.dist(this.base_pos);
+    let coeff = (this.r - this.rCircle) / (this.RCircle - this.rCircle);
+    let moveRange = range * coeff;
+    if (dist > moveRange) {
+      let attraction = p5.Vector.sub(this.base_pos, this.pos);
+      attraction.mult(dist);
+      attraction.mult(0.001);
+      this.applyForce(attraction);
     }
   }
 
@@ -143,22 +191,15 @@ class Particle {
     this.acc.add(force);
   }
 
-  formCircle() {
-
-  }
-  circlularMovement(x, y, z, R, r) {
-    let center = createVector(x, y, z);
-    let force = p5.Vector.sub(this.pos, center);
-    force.normalize();
-    let mag_attraction = (this.pos.dist(center) - r) / (R - r);
-    let mag_repulsion = (R - this.pos.dist(center)) / (R - r);
-    let magnitude = mag_repulsion - mag_attraction;
-    force.mult(magnitude);
-    force.mult(0.05);
-    this.applyForce(force);
+  updateBase(val) {
+    // console.log(val)
+    this.r += val;
+    let xPos = sin(this.angle) * this.r;
+    let yPos = cos(this.angle) * this.r;
+    this.base_pos.set(xPos, yPos, 0);
   }
 
-  update() {
+  move() {
     this.vel.add(this.acc);
     this.pos.add(this.vel);
     this.acc.mult(0);

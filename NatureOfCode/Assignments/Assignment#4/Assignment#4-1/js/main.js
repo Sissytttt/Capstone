@@ -1,6 +1,6 @@
 let params = {
   PARTICLE_NUMBER: 10000,
-  CENTER_NUMBER: 6,
+  CENTER_NUMBER: 1,
   particleNum: 0,
   color: "#FFFFFF"
 };
@@ -182,7 +182,7 @@ function resetParticleSystem() {
     let nearest_center = p.nearestCenter(center);
     p.setCenter(nearest_center.pos.x, nearest_center.pos.y, nearest_center.pos.z);
     p.setVel();
-    p.attractedTo(nearest_center);
+    // p.attractedTo(nearest_center);
     p.setVel();
     particles.push(p);
   }
