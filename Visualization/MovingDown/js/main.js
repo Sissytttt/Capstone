@@ -48,7 +48,7 @@ function updateThree() {
     p.setColor(red(c), green(c), blue(c));
     p.move();
     // p.movedown1(1);
-    p.movedown2(4);
+    p.movedown(4);
     p.disappear();
     // p.age();
     if (p.isDone) {
@@ -149,23 +149,8 @@ class Particle {
     this.mass = this.scl.x * this.scl.y * this.scl.z;
     return this;
   }
-  // movedown1(vel) {
-  //   let xFreq = (-WORLD_LENGTH + this.pos.x) * 0.005;
-  //   let yFreq = (-WORLD_WIDTH + this.pos.y) * 0.008;
-  //   let noiseValue = noise(xFreq, yFreq);
-  //   if (noiseValue < 0.2) {
-  //     vel = map(noiseValue, 0, 0.2, 0 * vel, 0.01 * vel);
-  //   }
-  //   else if (noiseValue < 0.5) {
-  //     vel = map(noiseValue, 0.2, 0.5, 0.01 * vel, 0.3 * vel)
-  //   }
-  //   else {
-  //     vel = map(noiseValue, 0.5, 1, 0.3 * vel, 0.4 * vel)
-  //   }
-  //   this.vel.y = -vel;
-  // }
 
-  movedown2(v) {
+  movedown(v) {
     let moveFreqX = (-WORLD_LENGTH + this.pos.x) * 0.01; // 整体 move downward
     let moveFreqY = (-WORLD_WIDTH + this.pos.y) * 0.01 + frame * 0.01;
     let moveNoise = noise(moveFreqX, moveFreqY);

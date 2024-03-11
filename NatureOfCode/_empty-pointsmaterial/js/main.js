@@ -121,9 +121,9 @@ class Particle {
     this.isDone = false;
 
     this.color = {
-      r: 255,
-      g: 255,
-      b: 255
+      r: 2,
+      g: 3,
+      b: 2
     };
   }
   setPos(x, y, z) {

@@ -132,7 +132,7 @@ class Particle {
     this.rotAcc = createVector();
 
     this.lifespan = 1.0;
-    this.lifeReduction = random(0.003, 0.05);
+    this.lifeReduction = random(0.003, 0.07);
     this.isDone = false;
     particles.push(this);
   }
@@ -234,7 +234,7 @@ class Wave {
   addNewParticle() {
     let p_posx = random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2);
     let xFreq = p_posx * 0.005 + frame * 0.005;
-    let noiseMove = map(noise(xFreq), 0, 1, -0.2, 0.6); // sin的平整度
+    let noiseMove = map(noise(xFreq), 0, 1, -0.2, 2); // sin的平整度
     let sinForFreq = sin(this.vel * frame) * noiseMove;
     this.freq = (frame * this.vel + p_posx * this.len) * this.freqAdj + sinForFreq;
     let sinValue = sin(this.freq) * this.amp;
