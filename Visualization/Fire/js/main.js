@@ -1,14 +1,20 @@
 let params = {
-  PARTICLE_NUMBER: 4000,
+  PARTICLE_NUMBER: 6000,
   particleNum: 0,
   color: "#FFFFFF",
-  distributionFactor: 5,
-  distributionFreq: 0.02
+  WORLD_LENGTH: 1000,
+  WORLD_HEIGHT: 700,
+  WORLD_DEPTH: 600,
+  // particles
+  lifeSpan: 1,
+  proportion: 0.5, // the portion of upper fire and lower fire // big = lower more
+  // lower fire
+  distributionFactor: 5, // 集中/均匀生成粒子 // big = condense // power factor for mapping the noise value
+  distributionFreq: 0.02, // 火苗更大/更细小 // big = small // frequency for noise postions
+  // upper fire
+  areaSize: 0.75,
 };
 
-const WORLD_LENGTH = 500;
-const WORLD_HEIGHT = 600;
-const WORLD_DEPTH = 600;
 
 let pointCloud;
 let particles = [];
@@ -30,11 +36,16 @@ function setupThree() {
   folderBasic.add(params, "particleNum").listen();
   folderBasic.addColor(params, 'color');
 
-  let Factors = gui.addFolder("FACTORS");
-  Factors.open();
-  Factors.add(params, "distributionFactor", 1, 5).step(0.1).listen();
-  Factors.add(params, "distributionFreq", 0.01, 0.06).step(0.001).listen();
+  let FactorsParticles = gui.addFolder("Particles_Factors");
+  FactorsParticles.add(params, "lifeSpan", 0.5, 3).step(0.1);
+  FactorsParticles.add(params, "proportion", 0, 1).step(0.01);
 
+  let FactorsLower = gui.addFolder("LOWER_FIRE_Factors");
+  FactorsLower.add(params, "distributionFactor", 1, 5).step(0.1);
+  FactorsLower.add(params, "distributionFreq", 0.01, 0.06).step(0.001);
+
+  let FactorsUpper = gui.addFolder("UPPER_FIRE_Factors");
+  FactorsUpper.add(params, "areaSize", 0, 1).step(0.01);
 }
 
 function updateThree() {
@@ -43,19 +54,23 @@ function updateThree() {
 
   // generate new particles
   while (particles.length < params.PARTICLE_NUMBER) {
-    generate_new_particle();
+    if (random() < params.proportion) {
+      generate_new_particle();
+    }
+    else {
+      add_upper_points();
+    }
   }
 
   // update the Particles class
   for (let i = 0; i < particles.length; i++) {
     let p = particles[i];
-    p.setColor(red(c), green(c), blue(c));
     p.flow();
     p.moveup();
     p.move();
     // p.modify_life();
     p.age();
-    if (p.isDone) {
+    if (p.isDone || p.pos.y > params.WORLD_HEIGHT / 2) {
       particles.splice(i, 1);
       i--; // not flipped version
     }
@@ -110,23 +125,43 @@ function getPoints(objects) {
 // ======================= Functions ===========================
 
 function generate_new_particle() {
-  let x = random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2);
+  let x = random(-params.WORLD_LENGTH / 2, params.WORLD_LENGTH / 2);
   // let powFactor = 5;
   let powFactor = params.distributionFactor;
   let distributionFreq = params.distributionFreq;
-  let noiseFreq = (x + 1000) * distributionFreq + frame * 0.005;
+  let noiseFreq = x * distributionFreq + frame * 0.005;
   let noiseValue = noise(noiseFreq);
   let threshold = map(pow(noiseValue, powFactor), 0, 1, 0, 1);
   let lifeReduction = map(noise(noiseFreq), 0, 1, 0.007, 0.001);
   let moveUp = map(noise(noiseFreq), 0, 1, 0, 1);
   if (random(1) < threshold) {
     let p = new Particle()
-      .setPos(x, 0, 0)
+      .setPos(x, 0 - params.WORLD_HEIGHT / 2, 0)
       .set_life_reduction(lifeReduction)
       .set_move_up(moveUp);
     particles.push(p);
   }
 }
+
+function add_upper_points() {
+  let distributionFreq = 0.01;
+  let x = random(-params.WORLD_LENGTH / 2, params.WORLD_LENGTH / 2);
+  let y = random(-params.WORLD_HEIGHT / 2, params.WORLD_HEIGHT / 2);
+  let xFreq = (x + 1000) * distributionFreq + sin(frame * 0.005);
+  // let xFreq = x * distributionFreq + frame * 0.005;
+  let yFreq = y * distributionFreq - frame * 0.005;
+  let noiseValue = noise(xFreq, yFreq);
+  let lifeReduction = map(noiseValue, 0, 1, 0.007, 0.001);
+  let moveUp = map(noiseValue, 0, 1, 0, 1);
+  if ((noiseValue > params.areaSize)) {
+    let p = new Particle()
+      .setPos(x, y, 0)
+      .set_life_reduction(lifeReduction)
+      .set_move_up(moveUp);
+    particles.push(p);
+  }
+}
+
 
 // ==============================================================
 class Particle {
@@ -138,7 +173,7 @@ class Particle {
     this.scl = createVector(1, 1, 1);
     this.mass = this.scl.x * this.scl.y * this.scl.z;
 
-    this.lifespan = 1;
+    this.lifespan = params.lifeSpan;
     this.lifeReduction = 0;
     this.isDone = false;
 
@@ -234,11 +269,12 @@ class Particle {
     this.applyForce(forceUp);
   }
 
-  modify_life() {
-    let xFreq = this.pos.x * 0.05 + frame * 0.05;
-    let yFreq = this.pos.y * 0.05 + frame * 0.05;
-    let zFreq = this.pos.z * 0.05 + frame * 0.05;
-    let noiseValue = map(noise(xFreq, yFreq, zFreq), 0, 1, -0.001, 0.003);
-    this.lifespan += noiseValue;
-  }
+
+  // modify_life() {
+  //   let xFreq = this.pos.x * 0.05 + frame * 0.05;
+  //   let yFreq = this.pos.y * 0.05 + frame * 0.05;
+  //   let zFreq = this.pos.z * 0.05 + frame * 0.05;
+  //   let noiseValue = map(noise(xFreq, yFreq, zFreq), 0, 1, -0.001, 0.003);
+  //   this.lifespan += noiseValue;
+  // }
 }

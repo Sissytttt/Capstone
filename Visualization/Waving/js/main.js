@@ -1,13 +1,18 @@
 let params = {
-  Particles_in_scene: 0
+  // basic
+  Particles_in_scene: 0,
+  MAX_PARTICLE_NUMBER: 3000,
+  // wave
+  WaveNum: 3,
+  WORLD_WIDTH: 1500,
+  WORLD_HEIGHT: 300,
+  WORLD_DEPTH: 500,
+  Roughness: 0.5, // big = rough
+
+  //particles
+
 };
 
-const WORLD_LENGTH = 1500;
-const WORLD_HEIGHT = 300;
-const WORLD_DEPTH = 500;
-const MAX_PARTICLE_NUMBER = 10000;
-
-let WaveNum = 7;
 let WaveAttri = []; // Wvel, Wlen, Wamp, noise_move, WfreqAdj = 1, WampAdj = 1
 let WavePos = [];
 let waves = [];
@@ -17,27 +22,10 @@ let particles = [];
 
 function setupThree() {
   // set up waves array
-  for (let i = 0; i < WaveNum; i++) {
-    Wvel = random(0.005, 0.03);  // * frameCount // big = fast
-    Wlen = random(0.005, 0.01); // * this.pos.x // big = short
-    Wamp = random(40, 80);
-    noise_move = random(100);
-    WfreqAdj = 1;
-    WampAdj = 1
-    WaveAttri.push([Wvel, Wlen, Wamp, noise_move, WfreqAdj, WampAdj]);
+  setWaves();
 
-    WposX = 0;
-    WposY = random(-WORLD_HEIGHT / 2, WORLD_HEIGHT / 2);
-    WposZ = random(-WORLD_DEPTH / 2, WORLD_DEPTH / 2);
-    WavePos.push([WposX, WposY, WposZ]);
-  }
 
-  for (let i = 0; i < WaveNum; i++) {
-    let wave = new Wave(...WaveAttri[i]).setPos(...WavePos[i]);
-    waves.push(wave);
-  }
-
-  for (let i = 0; i < MAX_PARTICLE_NUMBER; i++) {
+  for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
     let random_wave = Math.floor(Math.random() * waves.length);
     waves[random_wave].addNewParticle();
   }
@@ -49,11 +37,20 @@ function setupThree() {
 
   // gui
   params.Particles_in_scene = particles.length;
-  gui.add(params, "Particles_in_scene").listen();
+
+  let folderBasic = gui.addFolder("WORLD BASIC");
+  folderBasic.add(params, "MAX_PARTICLE_NUMBER", 0, 10000).step(1).listen();
+  folderBasic.add(params, "Particles_in_scene").listen();
+  folderBasic.add(params, "WORLD_WIDTH", 0, 2000).step(10);
+  folderBasic.add(params, "WORLD_HEIGHT", 0, 2000).step(10);
+
+  let folderWave = gui.addFolder("Wave Parameters");
+  folderWave.add(params, "WaveNum", 1, 20, 1).onChange(setWaves);
+  folderWave.add(params, "roughness", 0, 2, 0.1);
 }
 
 function updateThree() {
-  while (particles.length < MAX_PARTICLE_NUMBER) {
+  while (particles.length < params.MAX_PARTICLE_NUMBER) {
     let random_wave = Math.floor(Math.random() * waves.length);
     waves[random_wave].addNewParticle();
   }
@@ -118,6 +115,38 @@ function getPoints(objects) {
   return points;
 }
 
+// ======================
+
+function setWaves() {
+  if (WavePos.length > 0) {
+    WavePos = [];
+    waves = []
+    console.log("yes");
+  }
+  for (let i = 0; i < params.WaveNum; i++) {
+    Wvel = random(0.005, 0.03);  // * frameCount // big = fast
+    Wlen = random(0.005, 0.01); // * this.pos.x // big = short
+    Wamp = random(40, 80);
+    noise_move = random(100);
+    WfreqAdj = 1;
+    WampAdj = 1
+    WaveAttri.push([Wvel, Wlen, Wamp, noise_move, WfreqAdj, WampAdj]);
+
+    WposX = 0;
+    WposY = random(-params.WORLD_HEIGHT / 2, params.WORLD_HEIGHT / 2);
+    WposZ = random(-params.WORLD_DEPTH / 2, params.WORLD_DEPTH / 2);
+    WavePos.push([WposX, WposY, WposZ]);
+  }
+
+  for (let i = 0; i < params.WaveNum; i++) {
+    let wave = new Wave(...WaveAttri[i]).setPos(...WavePos[i]);
+    waves.push(wave);
+  }
+
+}
+
+
+// ======================
 class Particle {
   constructor() {
     this.pos = createVector();
@@ -172,12 +201,12 @@ class Particle {
     this.acc.add(force);
   }
   reappear() {
-    if (this.pos.z > WORLD_DEPTH / 2) {
-      this.pos.z = -WORLD_DEPTH / 2;
+    if (this.pos.z > params.WORLD_DEPTH / 2) {
+      this.pos.z = -params.WORLD_DEPTH / 2;
     }
   }
   disappear() {
-    if (this.pos.z > WORLD_DEPTH / 2) {
+    if (this.pos.z > params.WORLD_DEPTH / 2) {
       this.isDone = true;
     }
   }
@@ -232,9 +261,9 @@ class Wave {
   }
 
   addNewParticle() {
-    let p_posx = random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2);
+    let p_posx = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
     let xFreq = p_posx * 0.005 + frame * 0.005;
-    let noiseMove = map(noise(xFreq), 0, 1, -0.2, 1); // sin的平整度
+    let noiseMove = map(noise(xFreq), 0, 1, -0.2 * params.roughness, params.roughness); // sin的平整度
     let sinForFreq = sin(this.vel * frame) * noiseMove;
     this.freq = (frame * this.vel + p_posx * this.len) * this.freqAdj + sinForFreq;
     let sinValue = sin(this.freq) * this.amp;

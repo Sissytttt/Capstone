@@ -1,33 +1,49 @@
 let params = {
   color: "#FFF",
-  particleNum: 0,
-};
+  particle_Num: 10000,
+  WORLD_WIDTH: 1500,
+  WORLD_HEIGHT: 900,
+  //
+  posFreq: 0.05, // can't see the difference ? not sure if they are working
+  timeFreq: 0.001,
+  flowForce: 0.0001, // 0.05~0.0001
+  //
+  circle_r: 800,
+  circle_R: 1000,
+  circle_Sd: 50,
+}
 
-const START_NUM_P = 10000;
-const TOTAL_NUM_OF_P = 3000;
-const WORLD_WIDTH = 1600;
-const WORLD_HEIGHT = 900;
 let pointCloud;
 let particles = [];
 
 
 //----------------------------------------------------
 function setupThree() {
-  pointCloud = getPoints(TOTAL_NUM_OF_P);
+  pointCloud = getPoints(params.particle_Num);
   scene.add(pointCloud);
 
-  for (let i = 0; i < START_NUM_P; i++) {
-    p = new Particle()
-      .setCen(0, 0, 0)
-      .setPos(800, 1000, 50)
-      .setVelMag(random(3, 5));
-    particles.push(p);
-  }
+  generateParticles();
 
+  //GUI
+  let folderBasic = gui.addFolder("BASIC");
+  folderBasic.add(params, "particle_Num").min(100).max(10000).step(1);
+
+  let noiseControl = gui.addFolder("NOISE_PARAMETERS");
+  noiseControl.add(params, "posFreq").min(0.00001).max(0.1).step(0.00001);
+  noiseControl.add(params, "timeFreq").min(0.00001).max(0.1).step(0.00001);
+  noiseControl.add(params, "flowForce").min(0.0001).max(0.05).step(0.0001);
+
+  let distributionControl = gui.addFolder("DISTRIBUTION_PEPARAMETERS");
+  distributionControl.add(params, "circle_r").min(100).max(1200).step(10).onChange(REgenerateParticles);
+  distributionControl.add(params, "circle_R").min(100).max(1500).step(10).onChange(REgenerateParticles);
+  distributionControl.add(params, "circle_Sd").min(10).max(100).step(1).onChange(REgenerateParticles);
 }
 
 //----------------------------------------------------
 function updateThree() {
+
+  generateParticles();
+
   for (const p of particles) {
     p.flow();
     p.attractToBase(50);
@@ -43,7 +59,7 @@ function updateThree() {
       i--;
     }
   }
-  while (particles.length > TOTAL_NUM_OF_P) {
+  while (particles.length > params.particle_Num) {
     particles.splice(0, 1);
   }
 
@@ -72,6 +88,29 @@ function updateThree() {
 
 
 //----------------------------------------------------
+
+function generateParticles() {
+  while (particles.length < params.particle_Num) {
+    p = new Particle()
+      .setCen(0, 0, 0)
+      .setPos(params.circle_r, params.circle_R, params.circle_Sd)
+      .setVelMag(random(3, 5));
+    particles.push(p);
+  }
+}
+
+
+function REgenerateParticles() {
+  particles = [];
+  while (particles.length < params.particle_Num) {
+    p = new Particle()
+      .setCen(0, 0, 0)
+      .setPos(params.circle_r, params.circle_R, params.circle_Sd)
+      .setVelMag(random(3, 5));
+    particles.push(p);
+  }
+}
+
 function getPoints(maxNum) {
   const vertices = new Float32Array(maxNum * 3); // x, y, z
   const colors = new Float32Array(maxNum * 3); // r, g, b
@@ -149,7 +188,6 @@ class Particle {
     let yPos = cos(this.angle) * this.r;
     this.base_pos = createVector(xPos, yPos, 0);
     this.pos.set(this.base_pos);
-
     return this;
   }
 
@@ -163,13 +201,16 @@ class Particle {
   }
 
   flow() {
-    let xFreq = this.pos.x * 0.005 + frame * 0.0000001;
-    let yFreq = this.pos.y * 0.005 + frame * 0.0000001;
+    let posFreq = params.posFreq;
+    let timeFreq = params.timeFreq;
+    let flowForce = params.flowForce;
+    let xFreq = this.pos.x * posFreq + frame * timeFreq;
+    let yFreq = this.pos.y * posFreq + frame * timeFreq;
     let noiseValueX = map(noise(xFreq, yFreq), 0.0, 1.0, -1.0, 1.0);
     let noiseValueY = map(noise(xFreq + 1000, yFreq + 1000), 0.0, 1.0, -1.0, 1.0);
     let force = new p5.Vector(noiseValueX, noiseValueY, 0);
     force.normalize();
-    force.mult(0.0005);
+    force.mult(flowForce);
     this.applyForce(force);
   }
 

@@ -11,21 +11,40 @@
 
 // ------ Reminder ------
 // 1. need calibration when mapping the values
+// 2. when adding points - need to add at both 'bodyPoints' + ('simple_keypoints' for simple keypoints) + (mass_array' for keypoints)
 
 
 // -------- TODO --------
 // visualizating flow
-// confidence 0.75 - weight average > sum
-// 就上半身的点
-// lerp - smooth / ave
+// lerp - smooth
 
 
 
 let video;
 let width = 640, height = 480;
 let bodypose;
-let get_points = ["nose", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist"];
-// let get_points = ["nose"];
+let bodyPoints = [
+  "nose",
+  "left_shoulder",
+  "right_shoulder",
+  "left_elbow",
+  "right_elbow",
+  "left_wrist",
+  "right_wrist",
+  "left_hip",
+  "right_hip"
+];
+let keypoints = {};
+let simple_keypoints = {
+  "left_hip": null,
+  "right_hip": null,
+  "right_shoulder": null,
+  "left_shoulder": null,
+  "torso": null,
+  "right_foot_index": null,
+  "left_foot_index": null
+};
+
 let mass_arr = {
   nose: 3,
   left_shoulder: 4,
@@ -35,12 +54,11 @@ let mass_arr = {
   left_wrist: 2,
   right_wrist: 2,
   left_foot_index: 3,
-  right_foot_index: 3
+  right_foot_index: 3,
 };
 let poses = [];
 let prev_poses = [];
-let keypoints = {};
-let simple_keypoints = { "left_hip": null, "right_hip": null, "right_shoulder": null, "left_shoulder": null, "torso": null };
+
 let WEIGHT, SPACE, TIME, FLOW;
 let MAPD_WEIGHT, MAPD_SPACE, MAPD_TIME, MAPD_FLOW;
 let MAX_ACC_BODYPART; // body part that has max ACC value
@@ -55,14 +73,13 @@ let min_time = 0;
 let max_flow = 100;
 let min_flow = 0;
 
-
 function preload() {
   //Load the bodypose model.
   bodypose = ml5.bodypose("BlazePose");
 }
 
 function setup() {
-  createCanvas(width, height);
+  createCanvas(640, 480);
 
   // Create the video and hide it
   video = createCapture(VIDEO);
@@ -73,8 +90,8 @@ function setup() {
   bodypose.detectStart(video, gotPoses);
 
   // Setup keypoints object
-  for (const bodypart of get_points) {
-    keypoints[bodypart] = new Node(bodypart);
+  for (const point of bodyPoints) {
+    keypoints[point] = new Node(point);
   }
 
   for (const bodypart in simple_keypoints) {
@@ -85,27 +102,18 @@ function setup() {
 function draw() {
   // Draw the webcam video
   image(video, 0, 0, width, height);
-  // setup nodes
-  if (prev_poses.length >= 1 && poses.length >= 1) {
-    let pose = poses[0];
-    let prev_pose = prev_poses[0];
 
-    setKeypointsPos(pose, prev_pose);
+  // setup nodes
+  if (poses.length >= 1) {
+    let pose = poses[0];
+
+    setKeypointsPos(pose);
     setupNodes(keypoints);
     setTorsoPos();
     display(keypoints);
   }
 
   calcVals();
-  console.log("WEIGHT", WEIGHT);
-  // console.log("SPACE", SPACE);
-  // console.log("TIME", TIME);
-  // console.log("FLOW", FLOW);
-  // console.log("MAPDWEIGHT", MAPD_WEIGHT);
-  // console.log("MAPDSPACE", MAPD_SPACE);
-  // console.log("MAPDTIME", MAPD_TIME);
-  // console.log("MAPDFLOW", MAPD_FLOW);
-  // mapVals();
   visSpace(0, 200);
   visTime(30, 50);
   visWeight(0, height);
@@ -131,10 +139,13 @@ function setKeypointsPos(pose_array) {
         keypoints[point.name].setScore(point.score);
       }
     }
+
     if (point.name in simple_keypoints && keypoints[point.name] != undefined) {
+      console.log(keypoints[point.name])
       if (point.score > 0.1) {
         simple_keypoints[point.name].setPos(point.x, point.y, point.z);
         keypoints[point.name].setScore(point.score);
+        console.log(point.name);
       }
     }
   }
@@ -201,11 +212,11 @@ function calcWeight() {
 }
 
 function calcSpace() {
-  if ("left_wrist" in keypoints && "right_wrist" in keypoints && "left_foot_index" in keypoints && "right_foot_index" in keypoints) {
+  if ("left_wrist" in keypoints && "right_wrist" in keypoints && "left_foot_index" in simple_keypoints && "right_foot_index" in simple_keypoints) {
     let left_wrist = keypoints["left_wrist"];
     let right_wrist = keypoints["right_wrist"];
-    let left_foot = keypoints["left_foot_index"];
-    let right_foot = keypoints["right_foot_index"];
+    let left_foot = simple_keypoints["left_foot_index"];
+    let right_foot = simple_keypoints["right_foot_index"];
 
     let dist1 = left_wrist.pos.dist(right_foot.pos);
     let dist2 = right_wrist.pos.dist(left_foot.pos);
@@ -289,12 +300,13 @@ function visWeight(min, max) {
 
 // Visualizing Space -- a circle centered at torso
 function visSpace(min, max) {
-  MAPD_SPACE = mapSpace(min, max);
+  MAPD_SPACE = mapSpace(max, min);
   if (simple_keypoints["torso"].pos.mag() != 0 && MAPD_SPACE != null) {
     let center = simple_keypoints["torso"].pos;
     stroke(61, 52, 139);
     fill(61, 52, 139);
     // noFill;
+    // circle(center.x, center.y, 200);
     circle(center.x, center.y, MAPD_SPACE);
   }
 }
@@ -329,7 +341,7 @@ class Node {
     this.acc = createVector();
     this.prev_acc = createVector();
     this.jer = createVector();
-
+    //this.isSimple = true;
     this.mass = 0;
     this.energy = 0;
   }

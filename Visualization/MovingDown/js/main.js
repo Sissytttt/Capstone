@@ -1,11 +1,20 @@
 let params = {
   PARTICLE_NUMBER: 10000,
   particleNum: 0,
-  color: "#FFFFFF"
+  color: "#FFFFFF",
+  WORLD_HEIGHT: 900,
+  WORLD_WIDTH: 1600,
+  // pattern
+  noisePosXFreq: 0.004,
+  noisePosYFreq: 0.01,
+  // particle
+  velocity: 4,
+  fade: false,
+  lifeReductionMin: 0.001,
+  lifeReductionMax: 0.005
+
 };
 
-const WORLD_WIDTH = 900;
-const WORLD_LENGTH = 1600;
 
 let pointCloud;
 let particles = [];
@@ -14,7 +23,7 @@ function setupThree() {
   // initialize particles
   for (let i = 0; i < params.PARTICLE_NUMBER; i++) {
     let p = new Particle()
-      .setPos(random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2), random(-WORLD_WIDTH / 2, WORLD_WIDTH / 2), 0)
+      .setPos(random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2), random(-params.WORLD_HEIGHT / 2, params.WORLD_HEIGHT / 2), 0)
     particles.push(p);
   }
 
@@ -24,12 +33,23 @@ function setupThree() {
 
   // GUI
   let folderBasic = gui.addFolder("WORLD BASIC");
-  folderBasic.open();
-  folderBasic.add(params, "PARTICLE_NUMBER", 0, params.PARTICLE_NUMBER).step(1).listen();
+  folderBasic.add(params, "PARTICLE_NUMBER", 0, 20000).step(1).listen();
   folderBasic.add(params, "particleNum").listen();
+  folderBasic.add(params, "WORLD_WIDTH", 0, 2000).step(10);
+  folderBasic.add(params, "WORLD_HEIGHT", 0, 2000).step(10);
   folderBasic.addColor(params, 'color');
 
+  let folderPattern = gui.addFolder("Pattern");
+  folderPattern.add(params, "noisePosXFreq", 0, 10).step(0.0001); // big = not obvious patter
+  folderPattern.add(params, "noisePosYFreq", 0, 10).step(0.0001); // big = not obvious patter
+
+  let folderParticle = gui.addFolder("Particle");
+  folderParticle.add(params, "velocity", 0, 10).step(0.1);
+  folderParticle.add(params, "fade");
+  folderParticle.add(params, "lifeReductionMin", 0, 0.01).step(0.0001);
+  folderParticle.add(params, "lifeReductionMax", 0, 0.05).step(0.0001);
 }
+
 
 function updateThree() {
   // set GUI variables
@@ -38,7 +58,7 @@ function updateThree() {
   // generate new particles
   while (particles.length < params.PARTICLE_NUMBER) {
     let p = new Particle()
-      .setPos(random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2), WORLD_WIDTH / 2, 0)
+      .setPos(random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2), params.WORLD_HEIGHT / 2, 0)
     particles.push(p);
   }
 
@@ -48,13 +68,16 @@ function updateThree() {
     p.setColor(red(c), green(c), blue(c));
     p.move();
     // p.movedown1(1);
-    p.movedown(4);
+    p.movedown(params.velocity);
     p.disappear();
-    // p.age();
+    if (params.fade == true) {
+      p.age();
+    }
     if (p.isDone) {
       particles.splice(i, 1);
       i--; // not flipped version
     }
+
   }
 
   // Update the particle class to points materials
@@ -118,7 +141,7 @@ class Particle {
     this.mass = this.scl.x * this.scl.y * this.scl.z;
 
     this.lifespan = 1.0;
-    this.lifeReduction = random(0.001, 0.005);
+    this.lifeReduction = random(params.lifeReductionMin, params.lifeReductionMax); // can also play with changing of the lifereduction
     this.isDone = false;
 
     this.color = {
@@ -151,8 +174,10 @@ class Particle {
   }
 
   movedown(v) {
-    let moveFreqX = (-WORLD_LENGTH + this.pos.x) * 0.01; // 整体 move downward
-    let moveFreqY = (-WORLD_WIDTH + this.pos.y) * 0.01 + frame * 0.01;
+    let moveFreqX = (-params.WORLD_WIDTH + this.pos.x) * params.noisePosXFreq; // 整体 move downward
+    let moveFreqY = (-params.WORLD_HEIGHT + this.pos.y) * params.noisePosXFreq + frame * 0.01;
+    // let moveFreqX = (-params.WORLD_WIDTH + this.pos.x) * 0.01; // 整体 move downward
+    // let moveFreqY = (-params.WORLD_HEIGHT + this.pos.y) * 0.01 + frame * 0.01;
     let moveNoise = noise(moveFreqX, moveFreqY);
     let moveAdj;
     if (moveNoise < 0.4) {
@@ -161,8 +186,8 @@ class Particle {
     else {
       moveAdj = map(moveNoise, 0.4, 1, 0.7, 1.2);
     }
-    let velFreqX = (-WORLD_LENGTH + this.pos.x + 1000) * 0.005; // each partile move downward
-    let velFreqY = (-WORLD_WIDTH + this.pos.y + 1000) * 0.008 + moveAdj;
+    let velFreqX = (-params.WORLD_WIDTH + this.pos.x + 1000) * 0.005; // each partile move downward
+    let velFreqY = (-params.WORLD_HEIGHT + this.pos.y + 1000) * 0.008 + moveAdj;
     let velNoise = noise(velFreqX, velFreqY);
     let vel;
     if (velNoise < 0.2) {
@@ -191,7 +216,14 @@ class Particle {
     this.acc.add(force);
   }
   disappear() {
-    if (this.pos.y < -WORLD_WIDTH / 2) {
+    if (this.pos.y < -params.WORLD_HEIGHT / 2) {
+      this.isDone = true;
+    }
+  }
+
+  age() {
+    this.lifespan -= this.lifeReduction;
+    if (this.lifespan < 0) {
       this.isDone = true;
     }
   }
