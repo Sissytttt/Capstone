@@ -34,6 +34,17 @@ function setupThree() {
   folderScale.add(params, "z").min(1).max(200).step(0.1);
   gui.add(params, "wireframe");
   gui.addColor(params, "color");
+
+  //
+
+  let Factors = gui.addFolder("FACTORS");
+  Factors.open();
+  Factors.add(params, "distributionFactor", 1, 5).step(0.1).listen(); // 程序里有变化的可以加listen；可以更新数值的变化 -- to monitor the value
+  Factors.add(params, "distributionFreq", 0.01, 0.06).step(0.001).listen(); // 单纯从外界获取数值，程序没有更新的话 可以不listen
+
+  // on change - listen to the parametor change
+  Factors.add(params, "...", min, max, step).onChange(function () { console.log("change") });
+  Factors.add(params, "...", min, max, step).onChange(function_name()); // define a function
 }
 
 function updateThree() {
@@ -54,3 +65,6 @@ function getBox() {
   const mesh = new THREE.Mesh(geometry, material);
   return mesh;
 }
+
+// 如果有class的话
+// class里面可以单写一个class的method 叫做update_params

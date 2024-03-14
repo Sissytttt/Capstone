@@ -1,5 +1,5 @@
 let params = {
-  PARTICLE_NUMBER: 4000,
+  PARTICLE_NUMBER: 6000,
   particleNum: 0,
   color: "#FFFFFF",
   distributionFactor: 5,

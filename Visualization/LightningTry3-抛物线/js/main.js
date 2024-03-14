@@ -2,6 +2,12 @@ let params = {
   color: "#FFF",
   particleNum: 0,
   moveFrequency: 0.02,
+  randomDuration: 120, // time -> length of the line // big=long // + random(-20, 20)
+  randomInterval: 0, // line喷射的间距 // + random(-20, 20)
+  randomVelMin: 2, // Vel (2, 15)
+  randomVelMax: 15,
+  WORLD_WIDTH: 1500,
+  WORLD_HEIGHT: 1000
 };
 
 
@@ -15,6 +21,8 @@ let randomDuration = 30;
 let adjA = Math.random(1000);
 let adjB = Math.random(1000);
 let dir;
+let acc;
+let xPos, yPos;
 
 function setupThree() {
   pointCloud = getPoints(NUM_OF_PARTICLES);
@@ -26,30 +34,52 @@ function setupThree() {
   Factors.add(params, "moveFrequency", 0.001, 0.3).step(0.001).listen();
   // dir = createVector(random(-1, 1), random(-1, 1));
   dir = createVector(1, 1);
+  acc = random(-1, 1);
+  xPos = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
+  yPos = -params.WORLD_HEIGHT / 2;
 }
 
 function updateThree() {
+  // showWorld();
   if (frame - lastFrame < randomDuration) {
-    // console.log("yes");
-    generate_line(dir, adjA, adjB);
+    generate_line(xPos, yPos, dir, acc);
+    generate_line(xPos + 10, yPos - 10, dir.rotate(PI), acc);
   }
   else if (frame - lastFrame >= randomDuration && frame - lastFrame < randomDuration + randomInterval) {
-    console.log("rest");
+    // console.log("rest");
   }
   else if (frame - lastFrame >= randomDuration + randomInterval) {
     // console.log("update");
-    randomDuration = random(40, 80);
-    randomInterval = random(0, 50);
+
+    let choice = floor(random(4));
+    if (choice === 0) {
+      xPos = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
+      yPos = -params.WORLD_HEIGHT / 2;
+      dir = createVector(random(-1, 1), random(0, 1));
+    } else if (choice === 1) {
+      xPos = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
+      yPos = params.WORLD_HEIGHT / 2;
+      dir = createVector(random(-1, 1), random(-1, 0));
+    } else if (choice === 2) {
+      xPos = -params.WORLD_WIDTH / 2;
+      yPos = random(-params.WORLD_HEIGHT / 2, params.WORLD_HEIGHT / 2);
+      dir = createVector(random(0, 1), random(-1, 1));
+    } else {
+      xPos = params.WORLD_WIDTH / 2;
+      yPos = random(-params.WORLD_HEIGHT / 2, params.WORLD_HEIGHT / 2);
+      dir = createVector(random(-1, 0), random(-1, 1));
+    }
+    randomDuration = params.randomDuration + random(-20, 20);
+    randomInterval = params.randomInterval + random(-20, 20);
+    randomVelocity = random(params.randomVelMin, params.randomVelMax);
     lastFrame = frame;
-    adjA = random(1000);
-    adjB = random(1000);
-    dir = createVector(random(-1, 1), random(-1, 1));
+    dir.mult(randomVelocity);
+    acc = random(-1, 1);
   }
 
   // update the particles first!
   for (const p of particles) {
     p.move();
-    p.updatePosition();
     p.updateLifespan();
   }
 
@@ -115,26 +145,66 @@ function getPoints(maxNum) {
 }
 // ============================
 
-function generate_line(dir, adjA, adjB) {
-  dir.mult(0.1);
-  let xFreq = (frame + adjA) * params.moveFrequency;
-  let yFreq = (frame + adjB) * params.moveFrequency;
-  let xPos = map(noise(xFreq), 0, 1, -1000, 1000) + dir.x;
-  let yPos = map(noise(yFreq), 0, 1, -500, 500) + dir.y;
-  particles.push(new Particle(xPos + 1, yPos + 1));
-  particles.push(new Particle(xPos + 1, yPos - 1));
-  particles.push(new Particle(xPos - 1, yPos + 1));
-  particles.push(new Particle(xPos - 1, yPos - 1));
-  particles.push(new Particle(xPos, yPos));
+function showWorld() {
+  for (let i = 0; i < 20; i++) {
+    yPos = -params.WORLD_HEIGHT / 2;
+    xPos = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
+    particles.push(new Particle(xPos, yPos));
+  }
+  for (let i = 0; i < 20; i++) {
+    yPos = params.WORLD_HEIGHT / 2;
+    xPos = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
+    particles.push(new Particle(xPos, yPos));
+  }
+  for (let i = 0; i < 20; i++) {
+    xPos = -params.WORLD_WIDTH / 2;
+    yPos = random(-params.WORLD_HEIGHT / 2, params.WORLD_HEIGHT / 2);
+    particles.push(new Particle(xPos, yPos));
+  }
+  for (let i = 0; i < 20; i++) {
+    xPos = params.WORLD_WIDTH / 2;
+    yPos = random(-params.WORLD_HEIGHT / 2, params.WORLD_HEIGHT / 2);
+    particles.push(new Particle(xPos, yPos));
+  }
 }
+function generate_line(x, y, vel, accMag) {
+  let acc = vel.copy().rotate(HALF_PI);
+  acc.setMag(accMag);
+  acc.mult(0.5);
+  particles.push(
+    new Particle(x, y)
+      .set_vel(dir.x, dir.y)
+      .set_acc(acc.x, acc.y)
+  );
+  particles.push(
+    new Particle(x, y)
+      .set_vel(dir.x + 1, dir.y + 1)
+      .set_acc(acc.x, acc.y)
+  );
+  particles.push(
+    new Particle(x, y)
+      .set_vel(dir.x + 1, dir.y - 1)
+      .set_acc(acc.x, acc.y)
+  );
+  particles.push(
+    new Particle(x, y)
+      .set_vel(dir.x - 1, dir.y + 1)
+      .set_acc(acc.x, acc.y)
+  );
+  particles.push(
+    new Particle(x, y)
+      .set_vel(dir.x - 1, dir.y - 1)
+      .set_acc(acc.x, acc.y)
+  );
+}
+
 
 //=============================
 
 class Particle {
   constructor(x = 0, y = 0, z = 0) {
     this.pos = createVector(x, y, z);
-    this.vel = createVector(random(-1, 1), random(-1, 1), random(-1, 1));
-    this.vel.mult(0.2);
+    this.vel = createVector();
     this.acc = createVector();
     this.mass = 1;
     //
@@ -148,10 +218,18 @@ class Particle {
     this.lifeReduction = random(0.005, 0.01);
     this.isDone = false;
   }
-  updatePosition() {
+  set_vel(x, y, z = 0) {
+    this.vel = createVector(x, y, z);
+    return this;
+  }
+  set_acc(x, y, z = 0) {
+    this.acc = createVector(x, y, z);
+    return this;
+  }
+  move() {
     this.vel.add(this.acc);
     this.pos.add(this.vel);
-    this.acc.mult(0);
+    // this.acc.mult(0);
   }
   updateLifespan() {
     if (this.lifespan > 0) {
@@ -167,10 +245,5 @@ class Particle {
       force.div(this.mass);
     }
     this.acc.add(force);
-  }
-  move() {
-    this.vel.add(this.acc);
-    this.pos.add(this.vel);
-    this.acc.mult(0);
   }
 }

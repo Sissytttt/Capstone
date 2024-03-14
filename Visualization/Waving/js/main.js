@@ -4,10 +4,10 @@ let params = {
 
 const WORLD_LENGTH = 1500;
 const WORLD_HEIGHT = 300;
-const WORLD_DEPTH = 1000;
+const WORLD_DEPTH = 500;
 const MAX_PARTICLE_NUMBER = 10000;
 
-let WaveNum = 4;
+let WaveNum = 7;
 let WaveAttri = []; // Wvel, Wlen, Wamp, noise_move, WfreqAdj = 1, WampAdj = 1
 let WavePos = [];
 let waves = [];
@@ -234,7 +234,7 @@ class Wave {
   addNewParticle() {
     let p_posx = random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2);
     let xFreq = p_posx * 0.005 + frame * 0.005;
-    let noiseMove = map(noise(xFreq), 0, 1, -0.2, 2); // sin的平整度
+    let noiseMove = map(noise(xFreq), 0, 1, -0.2, 1); // sin的平整度
     let sinForFreq = sin(this.vel * frame) * noiseMove;
     this.freq = (frame * this.vel + p_posx * this.len) * this.freqAdj + sinForFreq;
     let sinValue = sin(this.freq) * this.amp;
