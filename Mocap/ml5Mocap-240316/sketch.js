@@ -27,18 +27,18 @@ let video;
 let width = 640, height = 480;
 let bodypose;
 let bodyPoints_info = {  // the points I want to get form the pose array, with info about their type and mass
-  "nose": { "type": "node", "mass": 3 },        // type "node" are those I'm going to calculate their vel, acc, jer
+  "nose": { "type": "node", "mass": 2 },        // type "node" are those I'm going to calculate their vel, acc, jer
   "left_shoulder": { "type": "node", "mass": 3 },
   "right_shoulder": { "type": "node", "mass": 3 },
-  "left_elbow": { "type": "node", "mass": 3 },
-  "right_elbow": { "type": "node", "mass": 3 },
-  "left_wrist": { "type": "node", "mass": 3 },
-  "right_wrist": { "type": "node", "mass": 3 },
+  "left_elbow": { "type": "node", "mass": 2 },
+  "right_elbow": { "type": "node", "mass": 2 },
+  "left_wrist": { "type": "node", "mass": 1 },
+  "right_wrist": { "type": "node", "mass": 1 },
   "left_hip": { "type": "simple", "mass": 3 },   // type "simple" are those I only need to get their pos and score
   "right_hip": { "type": "simple", "mass": 3 },
-  "right_foot_index": { "type": "simple", "mass": 3 },
-  "left_foot_index": { "type": "simple", "mass": 3 },
-  "torso": { "type": "simple_needCal", "mass": 3 }, // I only need the position, but I can't directly get it from the pose array; instead, I need to calculate it.
+  "right_foot_index": { "type": "simple", "mass": 2 },
+  "left_foot_index": { "type": "simple", "mass": 2 },
+  "torso": { "type": "simple_needCal", "mass": 4 }, // I only need the position, but I can't directly get it from the pose array; instead, I need to calculate it.
 };
 let keypoints = {}; // "name": Node instance
 
@@ -343,7 +343,6 @@ class Node {
     let dist = this.acc.dist(this.prev_acc);
     this.jer.set(p5.Vector.sub(this.acc, this.prev_acc)); // ∝ j
   }
-
 
   calcEnergy() {
     // dist ∝ v
