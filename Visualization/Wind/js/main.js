@@ -42,7 +42,7 @@ function setupThree() {
 
   // GUI
   let folderBasic = gui.addFolder("WORLD BASIC");
-  folderBasic.add(params, "PARTICLE_NUMBER", 0, params.PARTICLE_NUMBER).step(1).listen();
+  folderBasic.add(params, "PARTICLE_NUMBER", 0, 10000).step(1).listen();
   folderBasic.add(params, "particleNum").listen();
   folderBasic.add(params, "WORLD_WIDTH").min(100).max(2000).step(10).onChange(setup_particles);
   folderBasic.add(params, "WORLD_HEIGHT").min(100).max(2000).step(10).onChange(setup_particles);
