@@ -279,7 +279,6 @@ function visSpace(min, max) {
     let center = keypoints["torso"].pos;
     stroke(61, 52, 139);
     fill(61, 52, 139);
-    // noFill;
     circle(center.x, center.y, MAPD_SPACE);
   }
 }

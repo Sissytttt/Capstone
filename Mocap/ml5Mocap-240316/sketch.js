@@ -7,10 +7,10 @@
 // ------- Changes -------
 // 1. Organized the code
 //    merget the two classes and arrays of "node" & "simple_node" 
-// 2. 
 
 // ------- Problem -------
 // 1. The space visualization is not working well, not sure why, but it is worse than the first version
+// 2. for calculating the place, not sure should I also just use the upper body parts (arms) for the calculation, or just keep what I have for now (distance between two wrists and ankles.)
 
 // ------- TODO -------
 // 1. visualize flow
@@ -18,7 +18,6 @@
 
 // ------ Reminder ------
 // 1. need calibration when mapping the values
-// 2. when adding points - need to add at both 'bodyPoints' + ('simple_keypoints' for simple keypoints) + (mass_array' for keypoints)
 
 // ------------------------------------------------
 
