@@ -1,36 +1,36 @@
 let params = {
-  Particles_in_scene: 0
+  MAX_PARTICLE_NUMBER: 10000,
+  WORLD_WIDTH: 1000,
+  WORLD_HEIGHT: 300,
+  WORLD_DEPTH: 1000,
+  Particles_in_scene: 0,
+  //
+  Line_Num: 50,
+  BendMagnitude: 30,
+  BendLength: 0.005, // noise(pos.y * BendLength + frame * ChangeSpeed)
+  ChangeSpeed: 0.005, // noise(pos.y * BendAmount + frame * ChangeSpeed)
+  BendDifference: 0.005, // noise(pos.x * BendDifference)
+  // LineBrightness:
+  //
+  // Flow
+  // Move
 };
 
-const WORLD_LENGTH = 1000;
-const WORLD_HEIGHT = 300;
-const WORLD_DEPTH = 1000;
-const MAX_PARTICLE_NUMBER = 10000;
 
-let LineNum = 50;
+
 let LinePos = [];
-let lines = [];
+let Lines = [];
 
 let pointCloud;
 let particles = [];
 
 function setupThree() {
-  // set up lines array
-  for (let i = 0; i < LineNum; i++) {
-    posX = random(-WORLD_LENGTH / 2, WORLD_LENGTH / 2);
-    posY = 0;
-    posZ = random(-WORLD_DEPTH / 10, WORLD_DEPTH / 10);
-    LinePos.push([posX, posY, posZ]);
-  }
 
-  for (let i = 0; i < LineNum; i++) {
-    let line = new Line().setPos(...LinePos[i]);
-    lines.push(line);
-  }
+  set_Up_Lines();
 
-  for (let i = 0; i < MAX_PARTICLE_NUMBER; i++) {
-    let random_line = Math.floor(Math.random() * lines.length);
-    lines[random_line].addNewParticle();
+  for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
+    let random_line = Math.floor(Math.random() * Lines.length);
+    Lines[random_line].addNewParticle();
   }
 
   // Points
@@ -39,14 +39,28 @@ function setupThree() {
 
 
   // gui
+  let folderBasic = gui.addFolder("WORLD BASIC");
+  folderBasic.add(params, "MAX_PARTICLE_NUMBER", 0, 20000).step(1);
+  folderBasic.add(params, "WORLD_WIDTH", 0, 2000, 10).onChange(set_Up_Lines);
+  folderBasic.add(params, "WORLD_HEIGHT", 0, 2000, 10).onChange(set_Up_Lines);
+  folderBasic.add(params, "WORLD_DEPTH", 0, 2000, 10).onChange(set_Up_Lines);
   params.Particles_in_scene = particles.length;
-  gui.add(params, "Particles_in_scene").listen();
+  folderBasic.add(params, "Particles_in_scene").listen();
+
+  let LineFolder = gui.addFolder("Line");
+  LineFolder.add(params, "Line_Num", 1, 100, 1).onChange(set_Up_Lines);
+  LineFolder.add(params, "BendMagnitude", 0, 80, 1);
+  LineFolder.add(params, "BendLength", 0, 1, 0.001);
+  LineFolder.add(params, "ChangeSpeed", 0, 1, 0.001);
+  LineFolder.add(params, "BendDifference", 0, 1, 0.001);
+
+
 }
 
 function updateThree() {
-  while (particles.length < MAX_PARTICLE_NUMBER) {
-    let random_line = Math.floor(Math.random() * lines.length);
-    lines[random_line].addNewParticle();
+  while (particles.length < params.MAX_PARTICLE_NUMBER) {
+    let random_line = Math.floor(Math.random() * Lines.length);
+    Lines[random_line].addNewParticle();
   }
 
   // update the particles
@@ -110,6 +124,25 @@ function getPoints(objects) {
   return points;
 }
 
+function set_Up_Lines() {
+  if (LinePos.length > 0 || Lines.length > 0) {
+    console.log("Yes")
+    LinePos = [];
+    Lines = [];
+  }
+
+  for (let i = 0; i < params.Line_Num; i++) {
+    posX = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
+    posY = 0;
+    posZ = random(-params.WORLD_DEPTH / 2, params.WORLD_DEPTH / 2);
+    LinePos.push([posX, posY, posZ]);
+  }
+
+  for (let i = 0; i < params.Line_Num; i++) {
+    let line = new Line().setPos(...LinePos[i]);
+    Lines.push(line);
+  }
+}
 class Particle {
   constructor() {
     this.pos = createVector();
@@ -175,12 +208,12 @@ class Particle {
     this.acc.add(force);
   }
   reappear() {
-    if (this.pos.z > WORLD_DEPTH / 2) {
-      this.pos.z = -WORLD_DEPTH / 2;
+    if (this.pos.z > params.WORLD_DEPTH / 2) {
+      this.pos.z = -params.WORLD_DEPTH / 2;
     }
   }
   disappear() {
-    if (this.pos.z > WORLD_DEPTH / 2) {
+    if (this.pos.z > params.WORLD_DEPTH / 2) {
       this.isDone = true;
     }
   }
@@ -221,7 +254,6 @@ class Particle {
 class Line {
   constructor() {
     this.pos = createVector();
-    this.lightness = 1;
     return this;
   }
 
@@ -231,10 +263,10 @@ class Line {
   }
 
   addNewParticle() {
-    let p_posy = random(-WORLD_DEPTH / 2, WORLD_HEIGHT / 2);
-    let xFreq = this.pos.x * 0.005
-    let yFreq = p_posy * 0.005 + frame * 0.005;
-    let noiseWave = map(noise(yFreq, xFreq), 0, 1, -30, 30); // 弯曲的变换
+    let p_posy = random(-params.WORLD_DEPTH / 2, params.WORLD_HEIGHT / 2);
+    let xFreq = this.pos.x * params.BendDifference
+    let yFreq = p_posy * params.BendLength + frame * params.ChangeSpeed;
+    let noiseWave = map(noise(yFreq, xFreq), 0, 1, - params.BendMagnitude, params.BendMagnitude); // 弯曲的变换
     let noiseValue = noise(yFreq, this.pos.x)
     let noiseBrightness;
     if (noiseValue < 0.2) {

@@ -40,7 +40,7 @@ let bodyPoints_info = {  // the points I want to get form the pose array, with i
   "left_foot_index": { "type": "simple", "mass": 2 },
   "torso": { "type": "simple_needCal", "mass": 4 }, // I only need the position, but I can't directly get it from the pose array; instead, I need to calculate it.
 };
-let keypoints = {}; // "name": Node instance
+let keypoints = {}; // {"name": Node instance}
 
 // pose array get from ml5
 let poses = [];

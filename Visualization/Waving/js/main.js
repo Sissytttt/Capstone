@@ -46,7 +46,7 @@ function setupThree() {
 
   let folderWave = gui.addFolder("Wave Parameters");
   folderWave.add(params, "WaveNum", 1, 20, 1).onChange(setWaves);
-  folderWave.add(params, "roughness", 0, 2, 0.1);
+  folderWave.add(params, "Roughness", 0, 2, 0.1);
 }
 
 function updateThree() {
@@ -263,7 +263,7 @@ class Wave {
   addNewParticle() {
     let p_posx = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
     let xFreq = p_posx * 0.005 + frame * 0.005;
-    let noiseMove = map(noise(xFreq), 0, 1, -0.2 * params.roughness, params.roughness); // sin的平整度
+    let noiseMove = map(noise(xFreq), 0, 1, -0.2 * params.Roughness, params.Roughness); // sin的平整度
     let sinForFreq = sin(this.vel * frame) * noiseMove;
     this.freq = (frame * this.vel + p_posx * this.len) * this.freqAdj + sinForFreq;
     let sinValue = sin(this.freq) * this.amp;
