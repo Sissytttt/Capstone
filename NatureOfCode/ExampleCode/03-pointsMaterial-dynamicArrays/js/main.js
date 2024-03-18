@@ -23,9 +23,9 @@ function updateThree() {
   // generate particles
   let x = cos(frame * 0.01) * 200;
   let y = sin(frame * 0.01) * 200;
-  particles.push(new Particle(x, y));
-  particles.push(new Particle(x, y));
-  particles.push(new Particle(x, y));
+  particles.push(new Particle().set_pos(x, y));
+  // particles.push(new Particle(x, y));
+  // particles.push(new Particle(x, y));
 
   // update the particles first!
   for (const p of particles) {
@@ -97,8 +97,8 @@ function getPoints(maxNum) {
 //
 
 class Particle {
-  constructor(x = 0, y = 0, z = 0) {
-    this.pos = createVector(x, y, z);
+  constructor() {
+    this.pos = createVector();
     this.vel = createVector(random(-1, 1), random(-1, 1), random(-1, 1));
     this.vel.mult(0.2);
     this.acc = createVector();
@@ -113,6 +113,10 @@ class Particle {
     this.lifespan = 1.0; // 100%
     this.lifeReduction = random(0.005, 0.01);
     this.isDone = false;
+  }
+  set_pos(x, y, z = 0) {
+    this.pos = createVector(x, y, z);
+    return this;
   }
   updatePosition() {
     this.vel.add(this.acc);

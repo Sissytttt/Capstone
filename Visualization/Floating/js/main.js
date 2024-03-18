@@ -10,10 +10,10 @@ let params = {
   BendLength: 0.005, // noise(pos.y * BendLength + frame * ChangeSpeed)
   ChangeSpeed: 0.005, // noise(pos.y * BendAmount + frame * ChangeSpeed)
   BendDifference: 0.005, // noise(pos.x * BendDifference)
-  // LineBrightness:
-  //
-  // Flow
-  // Move
+  // 
+  FlowPosFreq: 0.005,
+  FlowTimeFreq: 0.005,
+  MoveSpd: 0.005,
 };
 
 
@@ -53,6 +53,11 @@ function setupThree() {
   LineFolder.add(params, "BendLength", 0, 1, 0.001);
   LineFolder.add(params, "ChangeSpeed", 0, 1, 0.001);
   LineFolder.add(params, "BendDifference", 0, 1, 0.001);
+
+  let ParticleFolder = gui.addFolder("Particles");
+  ParticleFolder.add(params, "FlowPosFreq", 0, 0.5, 0.0001);
+  ParticleFolder.add(params, "FlowTimeFreq", 0, 0.5, 0.0001);
+  ParticleFolder.add(params, "MoveSpd", 0, 0.5, 0.0001);
 
 
 }
@@ -143,6 +148,9 @@ function set_Up_Lines() {
     Lines.push(line);
   }
 }
+
+
+// ============================
 class Particle {
   constructor() {
     this.pos = createVector();
@@ -224,26 +232,19 @@ class Particle {
       this.isDone = true;
     }
   }
-  attractedTo(x, y, z) {
-    let target = new p5.Vector(x, y, z);
-    let force = p5.Vector.sub(target, this.pos);
-    if (force.mag() < 100) {
-      force.mult(-0.005);
-    } else {
-      force.mult(0.0001);
-    }
-    this.applyForce(force);
-  }
+
   flow() {
-    let xFreq = this.pos.x * 0.005 + frame * 0.005;
-    let yFreq = this.pos.y * 0.005 + frame * 0.005;
-    let zFreq = this.pos.z * 0.005 + frame * 0.005;
+    let posFreq = params.FlowPosFreq;
+    let timeFreq = params.FlowTimeFreq;
+    let xFreq = this.pos.x * posFreq + frame * timeFreq;
+    let yFreq = this.pos.y * posFreq + frame * timeFreq;
+    let zFreq = this.pos.z * posFreq + frame * timeFreq;
     let noiseValue1 = map(noise(xFreq, yFreq, zFreq), 0.0, 1.0, -1.0, 1.0);
     let noiseValue2 = map(noise(xFreq + 1000, yFreq + 1000, zFreq + 1000), 0.0, 1.0, -10, 10);
     let noiseValue3 = map(noise(xFreq + 2000, yFreq + 2000, zFreq + 2000), 0.0, 1.0, -1.0, 1.0);
     let force = new p5.Vector(noiseValue1, noiseValue2, noiseValue3);
     force.normalize();
-    force.mult(0.005);
+    force.mult(params.MoveSpd);
     // force.mult(this.moveScl);
     this.applyForce(force);
 
