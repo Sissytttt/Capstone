@@ -1,0 +1,8 @@
+# folders
+__test__/
+archive/
+other/
+.vscode/
+
+# files
+.DS_Store
