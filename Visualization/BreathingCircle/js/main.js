@@ -4,13 +4,17 @@ let params = {
   WORLD_WIDTH: 1500,
   WORLD_HEIGHT: 900,
   //
-  posFreq: 0.05, // can't see the difference ? not sure if they are working
-  timeFreq: 0.001,
+  posFreq: 0.05, // do not show // can't see the difference? not sure if they are working
+  timeFreq: 0.001, // do not show
   flowForce: 0.0001, // 0.05~0.0001
   //
   circle_r: 800,
-  circle_R: 1000,
-  circle_Sd: 50,
+  circle_R: 1000, // ->big
+  circle_Sd: 50, // -> big
+  //movement
+  BreathSpeed: 0.03,
+  //particle
+  ParticleNoise: 30,
 }
 
 let pointCloud;
@@ -37,6 +41,10 @@ function setupThree() {
   distributionControl.add(params, "circle_r").min(100).max(1200).step(10).onChange(REgenerateParticles);
   distributionControl.add(params, "circle_R").min(100).max(1500).step(10).onChange(REgenerateParticles);
   distributionControl.add(params, "circle_Sd").min(10).max(100).step(1).onChange(REgenerateParticles);
+
+  let movingControl = gui.addFolder("MOVEMENT CONTROL");
+  movingControl.add(params, "BreathSpeed", 0, 0.1, 0.001).onChange(REgenerateParticles);
+  movingControl.add(params, "ParticleNoise", 0, 100, 1).onChange(REgenerateParticles);
 }
 
 //----------------------------------------------------
@@ -46,8 +54,8 @@ function updateThree() {
 
   for (const p of particles) {
     p.flow();
-    p.attractToBase(50);
-    p.updateBase(sin(frame * 0.03));
+    p.attractToBase(params.ParticleNoise);
+    p.updateBase(sin(frame * params.BreathSpeed));
     p.move();
   }
 

@@ -8,7 +8,7 @@ let params = {
   // particles
   lifeSpan: 1,
   proportion: 0.5, // the portion of upper fire and lower fire // big = lower more
-  // lower fire
+  // lower fire // decrease lifespan to check the following
   distributionFactor: 5, // 集中/均匀生成粒子 // big = condense // power factor for mapping the noise value
   distributionFreq: 0.02, // 火苗更大/更细小 // big = small // frequency for noise postions
   // upper fire

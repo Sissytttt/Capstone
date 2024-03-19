@@ -7,11 +7,11 @@ let params = {
   //
   Line_Num: 50,
   BendMagnitude: 30,
-  BendLength: 0.005, // noise(pos.y * BendLength + frame * ChangeSpeed)
+  BendLength: 0.005, // do not show // noise(pos.y * BendLength + frame * ChangeSpeed)
   ChangeSpeed: 0.005, // noise(pos.y * BendAmount + frame * ChangeSpeed)
-  BendDifference: 0.005, // noise(pos.x * BendDifference)
+  BendDifference: 0.005, // do not show // noise(pos.x * BendDifference)
   // 
-  FlowPosFreq: 0.005,
+  FlowPosFreq: 0.005, // do not show // 
   FlowTimeFreq: 0.005,
   MoveSpd: 0.005,
 };

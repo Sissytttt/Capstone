@@ -33,8 +33,7 @@ let distMax;
 
 function setupThree() {
 
-  // initialize particles
-  setup_particles();
+
 
   // Points
   pointCloud = getPoints(particles);
@@ -52,9 +51,6 @@ function setupThree() {
   let ParamControl = gui.addFolder("ParamControl");
   ParamControl.open();
   ParamControl.add(params, "concentration").min(0.5).max(2).step(0.1);
-  ParamControl.add(params, "Var").min(0).max(1).step(0.1);
-  ParamControl.add(params, "Var").min(0).max(1).step(0.1);
-  ParamControl.add(params, "Var").min(0).max(1).step(0.1);
 
   ParamControl.add(params, "windPosX").min(-params.WORLD_WIDTH / 2).max(params.WORLD_WIDTH / 2).step(1).listen();
   ParamControl.add(params, "windPosY").min(-params.WORLD_HEIGHT / 2).max(params.WORLD_HEIGHT / 2).step(1).listen();

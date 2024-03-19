@@ -12,7 +12,11 @@ let params = {
   BranchAngleRange: 70,
   anglePossibility: 0.01,
   branchPossibility: 0.008,
-
+  //
+  particleLifeSpan: 1.0,
+  flowPosFreq: 0.05,
+  flowTimeFreq: 0.005, // do not show
+  flowSpd: 0.005,
 };
 
 let things = [];
@@ -38,28 +42,36 @@ function setupThree() {
   folderBasic.add(params, "WORLD_DEPTH", 0, 2000, 10);
   params.Particles_in_scene = particles.length;
   folderBasic.add(params, "Particles_in_scene").listen();
+
+  let folderThing = gui.addFolder("LINES CONTROL");
+  folderThing.add(params, "StartPoints", 1, 10, 1);
+  folderThing.add(params, "AngleRange", 1, 90, 1);
+  folderThing.add(params, "BranchAngleRange", 1, 90, 1);
+  folderThing.add(params, "anglePossibility", 0, 1, 0.001);
+  folderThing.add(params, "branchPossibility", 0, 0.5, 0.001);
+
+  let folderParticle = gui.addFolder("PARTICLE CONTROL");
+  folderParticle.add(params, "particleLifeSpan", 0, 2, 0.01);
+  folderParticle.add(params, "flowPosFreq", 0, 1, 0.001);
+  folderParticle.add(params, "flowTimeFreq", 0, 1, 0.001);
+  folderParticle.add(params, "flowSpd", 0, 0.1, 0.0001);
+
 }
 
 function updateThree() {
   addLightning(0.01);
   if (particles.length < params.MAX_PARTICLE_NUMBER) {
     for (const thing of things) {
+      let noiseFreq = 0.05;
+      let noiseRange = 10;
+      let noiseValueX = noise(thing.pos.x * noiseFreq, frame * noiseFreq);
+      let noiseValueY = noise(thing.pos.y * noiseFreq, frame * noiseFreq);
+      let adjX = map(noiseValueX, 0, 1, -noiseRange, noiseRange);
+      let adjY = map(noiseValueY, 0, 1, -noiseRange, noiseRange);
       let p1 = new Particle()
-        .set_pos(thing.pos.x, thing.pos.y)
+        .set_pos(thing.pos.x + adjX, thing.pos.y + adjY)
         .set_vel(0, 0);
       particles.push(p1);
-      let p2 = new Particle()
-        .set_pos(thing.pos.x + 1, thing.pos.y - 1)
-        .set_vel(0, 0);
-      particles.push(p2);
-      let p3 = new Particle()
-        .set_pos(thing.pos.x - 1, thing.pos.y - 1)
-        .set_vel(0, 0);
-      particles.push(p3);
-      let p4 = new Particle()
-        .set_pos(thing.pos.x + 1, thing.pos.y + 1)
-        .set_vel(0, 0);
-      particles.push(p4);
     }
   }
 
@@ -120,7 +132,7 @@ function getPoints() {
 
   const material = new THREE.PointsMaterial({
     vertexColors: true,
-
+    size: random(2, 4),
     depthTest: false,
     blending: THREE.AdditiveBlending,
   });
@@ -143,7 +155,6 @@ function addLightning(possibility) {
 }
 function addBranch(thing, possibility) {
   if (random(1) < (thing.depth * possibility)) {
-    console.log("yes")
     let newThing = new MovingThing()
       .set_pos(thing.pos.x, thing.pos.y, thing.pos.z)
       .set_vel(thing.vel.x, thing.vel.y, thing.vel.z)
@@ -230,7 +241,7 @@ class Particle {
     this.scl = createVector(1, 1, 1);
     this.mass = this.scl.x * this.scl.y * this.scl.z;
 
-    this.lifespan = 1.0;
+    this.lifespan = params.particleLifeSpan;
     this.lifeReduction = random(0.003, 0.005);
     this.isDone = false;
 
@@ -279,8 +290,8 @@ class Particle {
     }
   }
   flow() {
-    let posFreq = 0.005;
-    let timeFreq = 0.005;
+    let posFreq = params.flowPosFreq;
+    let timeFreq = params.flowTimeFreq;
     let xFreq = this.pos.x * posFreq + frame * timeFreq;
     let yFreq = this.pos.y * posFreq + frame * timeFreq;
     let zFreq = this.pos.z * posFreq + frame * timeFreq;
@@ -289,7 +300,7 @@ class Particle {
     let noiseValue3 = map(noise(xFreq + 2000, yFreq + 2000, zFreq + 2000), 0.0, 1.0, -1.0, 1.0);
     let force = new p5.Vector(noiseValue1, noiseValue2, noiseValue3);
     force.normalize();
-    force.mult(0.002);
+    force.mult(params.flowSpd);
     this.applyForce(force);
   }
 
