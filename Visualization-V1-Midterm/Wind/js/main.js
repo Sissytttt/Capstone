@@ -1,6 +1,6 @@
 let params = {
   //basic
-  PARTICLE_NUMBER: 1000,
+  PARTICLE_NUMBER: 100,
   particleNum: 0,
   color: "#FFFFFF",
   WORLD_HEIGHT: 1000,
