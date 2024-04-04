@@ -126,7 +126,6 @@ class Particle {
 
   setAcc() {
     this.acc = p5.Vector.sub(this.cen, this.pos);
-    // console.log(this.acc.x, this.acc.y, this.acc.z);
     return this;
   }
 
