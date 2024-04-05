@@ -1,69 +1,117 @@
 let params = {
-  color: "#FFF",
-  particle_Num: 1000,
-  WORLD_WIDTH: 1500,
-  WORLD_HEIGHT: 900,
-  //
-  posFreq: 0.01, // can't see the difference? not sure if they are working
-  timeFreq: 0.0001,
-  flowForce: 0.01, // 0.05~0.0001
-  //
-  circle_r: 100,
-  circle_R: 1000,
-  circle_Sd: 50,
-  //movement
-  BreathSpeed: 0.03,
-  //particle
-  ParticleNoise: 30,
-}
+  MAX_PARTICLE_NUMBER: 5000,
+  WORLD_WIDTH: 1000,
+  WORLD_HEIGHT: 1000,
+  // Big circle (bagua)
+  BigCircleRad: 500,
+  BigCircleAngle: 0,
+  moveSpeed: 1, // needs to be divisible by 90 （90 % moveSpeed == 0）
+  // Small circle
+  SmallCircleRad: 100,
+  breathFreq: 0.02,
+  breathingAmp: 20,
+  pointRad: 10,
+  shrinkSpeed: 1,
+  // particles
+  lifeReductionMin: 0.001,
+  lifeReductionMax: 0.05,
+  velRange: 0.03,
+  velRangeTop: 1,
+  // trace
+  traceThreshold: 0.3,
+  traceVelRange: 0.1,
+  traceAdjAngle: 10, // 避免trace画到圆里面, 初始为0，之后根据小圆的大小调整
+  rotationSpeedTop: 1,
+  rotationParVelRange: 0.1,
+  spreadRad: 0,
+  spreadSpd: 0.0005,
+  // whole process
+  phase2WaitTime: 150,
+  phase2stage3Time: 60,
+  phase3stage1Time: 100,
+};
+
+
+let testMode = false;
+
+const WORLD_SIZE = 1000;
 
 let pointCloud;
 let particles = [];
 
-let mouseX, mouseY;
+let mousePos, centerPos, moveDirection;
+let mouseIsClicked = false;
+
+let SmallCircleRad = params.SmallCircleRad;
+let breathingAmp = params.breathingAmp;
+
+let velRange = params.velRange;
+let lifeReductionMin = params.lifeReductionMin;
+let lifeReductionMax = params.lifeReductionMax;
+
+// trace
+let trajAngle = 0;
+let traceAdjAngle = 0; // 避免trace画到圆里面, 初始为0，之后等于params.traceAdjAngle
+let rotationSpeed = 0; // start from 0, reach to params.rotationSpeedTop
+let spread = false;
+
+// whole process
+let pause = true;
+let phase1Finish = false;
+let phase2StartTime = 0;
+let phase2stage3;
+let phase2Finish = false;
+let phase3StartTime = 0;
+let phase3transmit = false;
 
 
-//----------------------------------------------------
+
 function setupThree() {
-  pointCloud = getPoints(params.particle_Num);
-  scene.add(pointCloud);
 
-  generateParticles();
-
-  //GUI
-  let folderBasic = gui.addFolder("BASIC");
-  folderBasic.add(params, "particle_Num").min(100).max(10000).step(1).onChange(REgenerateParticles);
-
-  let noiseControl = gui.addFolder("NOISE_PARAMETERS");
-  noiseControl.add(params, "posFreq").min(0.00001).max(0.1).step(0.00001);
-  noiseControl.add(params, "timeFreq").min(0.00001).max(0.1).step(0.00001);
-  noiseControl.add(params, "flowForce").min(0.0001).max(0.05).step(0.0001);
-
-  let distributionControl = gui.addFolder("DISTRIBUTION_PEPARAMETERS");
-  distributionControl.add(params, "circle_r").min(100).max(1200).step(10).onChange(REgenerateParticles);
-  distributionControl.add(params, "circle_R").min(100).max(1500).step(10).onChange(REgenerateParticles);
-  distributionControl.add(params, "circle_Sd").min(10).max(100).step(1).onChange(REgenerateParticles);
-
-  let movingControl = gui.addFolder("MOVEMENT CONTROL");
-  movingControl.add(params, "BreathSpeed", 0, 0.1, 0.001).onChange(REgenerateParticles);
-  movingControl.add(params, "ParticleNoise", 0, 100, 1).onChange(REgenerateParticles);
-}
-
-//----------------------------------------------------
-function updateThree() {
-
-  generateParticles();
-
-  for (const p of particles) {
-    p.update_center(mouseX, mouseY, 0);
-    p.move_to_center();
-    p.flow();
-    p.attractToBase(params.ParticleNoise);
-    p.updateBase(sin(frame * params.BreathSpeed));
-    p.move();
+  if (testMode == true) { // fast speed
+    params.moveSpeed *= 10;
+    params.shrinkSpeed *= 10;
+    // params.rotationSpeedTop *= 10;
+    // params.phase2WaitTime = 10;
+    // params.spreadSpd *= 10;
   }
 
-  // update the individual points
+  mousePos = createVector(0, 0);
+  centerPos = createVector(0, 0);
+  moveDirection = createVector(0, 0);
+
+  // particles
+  for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
+    let angle = random(TWO_PI);
+    let x = cos(angle) * params.SmallCircleRad;
+    let y = sin(angle) * params.SmallCircleRad;
+    let tParticle = new Particle()
+      .setPosition(x, y, random(-5, 5))
+      .setVelocity(random(-velRange, velRange), random(-velRange, velRange), random(-velRange, velRange))
+      .setLifeReduction(lifeReductionMin, lifeReductionMax);
+    particles.push(tParticle);
+  }
+  params.drawCount = particles.length;
+
+  // Points
+  pointCloud = getPoints(particles);
+  scene.add(pointCloud);
+}
+
+function updateThree() {
+  if (phase1Finish == false) {
+    phase1_bagua_trace();
+    phase1_updateParticles();
+  }
+  else if ((phase2Finish == false)) {
+    phase2_Rotation();
+    phase2_updateParticles();
+  }
+  else {
+    phase3_transmit();
+    phase3_updateParticles();
+  }
+  // then update the points
   let positionArray = pointCloud.geometry.attributes.position.array;
   let colorArray = pointCloud.geometry.attributes.color.array;
   for (let i = 0; i < particles.length; i++) {
@@ -73,187 +121,396 @@ function updateThree() {
     positionArray[ptIndex + 0] = p.pos.x;
     positionArray[ptIndex + 1] = p.pos.y;
     positionArray[ptIndex + 2] = p.pos.z;
-    // color
-    colorArray[ptIndex + 0] = p.color.r;
-    colorArray[ptIndex + 1] = p.color.g;
-    colorArray[ptIndex + 2] = p.color.b;
+    //color
+    colorArray[ptIndex + 0] = 1.0 * p.lifespan;
+    colorArray[ptIndex + 1] = 1.0 * p.lifespan;
+    colorArray[ptIndex + 2] = 1.0 * p.lifespan;
   }
+  pointCloud.geometry.setDrawRange(0, particles.length); // ***
+  pointCloud.geometry.attributes.position.needsUpdate = true;
+  pointCloud.geometry.attributes.color.needsUpdate = true;
 
-  // update on GPU
-  pointCloud.geometry.setDrawRange(0, particles.length);
-  pointCloud.geometry.attributes.position.needsUpdate = true; // ***
-  pointCloud.geometry.attributes.color.needsUpdate = true; // ***
+  // update GUI
+  params.drawCount = particles.length;
 }
 
+function getPoints(objects) {
+  const vertices = [];
+  const colors = [];
 
-//----------------------------------------------------
-
-function generateParticles() {
-  while (particles.length < params.particle_Num) {
-    p = new Particle()
-      .setCen(mouseX, mouseY, 0)
-      .setPos(params.circle_r, params.circle_R, params.circle_Sd)
-      .setVelMag(random(3, 5));
-    particles.push(p);
+  for (let obj of objects) {
+    vertices.push(obj.pos.x, obj.pos.y, obj.pos.z);
+    colors.push(1, 1, 1);
   }
-}
-
-function REgenerateParticles() {
-  particles = [];
-  while (particles.length < params.particle_Num) {
-    p = new Particle()
-      .setCen(mouseX, mouseY, 0)
-      .setPos(params.circle_r, params.circle_R, params.circle_Sd)
-      .setVelMag(random(3, 5));
-    particles.push(p);
-  }
-}
-
-function getPoints(maxNum) {
-  const vertices = new Float32Array(maxNum * 3); // x, y, z
-  const colors = new Float32Array(maxNum * 3); // r, g, b
-
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
+  const drawCount = objects.length; // draw the whole objects
+  geometry.setDrawRange(0, drawCount);
+  const texture = new THREE.TextureLoader().load('assets/particle_texture.jpg');
   const material = new THREE.PointsMaterial({
-    // color: 0xFFFF00,
+    //color: 0xFF9911,
     vertexColors: true,
-
-    transparent: true,
+    size: 3,
+    sizeAttenuation: true, // default
     opacity: 0.9,
-
-    size: 2,
-
+    transparent: true,
     depthTest: false,
     blending: THREE.AdditiveBlending,
+    map: texture
   });
   const points = new THREE.Points(geometry, material);
   return points;
 }
 
-//----------------------------------------------------
+
+
+// ====================== phase 1 ==========================
+function phase1_bagua_trace() {
+  move_center();
+  phase1_generateParticles();
+  if (pause == true && mouseIsClicked == false) {
+    velRange = params.velRange;
+    SmallCircleRad = lerp(SmallCircleRad, params.SmallCircleRad, 0.05)
+    if (abs(SmallCircleRad - params.SmallCircleRad) < 0.1) {
+      SmallCircleRad = params.SmallCircleRad;
+    }
+    if (breathingAmp < params.breathingAmp) {
+      breathingAmp++;
+    }
+  }
+  if (pause == true && mouseIsClicked) { // mouse clicked
+    if (SmallCircleRad > params.pointRad) { // circle shrinks
+      if (breathingAmp > 10) {
+        breathingAmp--;
+      }
+      if (SmallCircleRad > params.pointRad) {
+        SmallCircleRad -= params.shrinkSpeed;
+      }
+      if (velRange < params.velRangeTop) {
+        velRange += 0.05;
+      }
+      lifeReductionMax = 0.01;
+    }
+    // move center
+    else if (SmallCircleRad <= 10) {
+      lifeReductionMax = params.lifeReductionMax;
+      pause = false; // move center
+      mouseIsClicked = false;
+    }
+    // pause set to true when reach the next position 
+  }
+}
+
+function phase1_generateParticles() {
+  while (particles.length < params.MAX_PARTICLE_NUMBER) {
+    if (trajAngle > 0 && random() < params.traceThreshold) { // generate particles for trace
+      if (trajAngle > params.traceAdjAngle) {
+        traceAdjAngle = params.traceAdjAngle
+      }
+      let angle = random() * (trajAngle - traceAdjAngle);
+      let x, y;
+      if (angle <= 180) {
+        x = sin(radians(angle)) * params.BigCircleRad;
+        y = cos(radians(angle)) * params.BigCircleRad + params.BigCircleRad;
+      }
+      else if (angle < 360) {
+        x = sin(radians(angle)) * params.BigCircleRad;
+        y = -(cos(radians(angle)) * params.BigCircleRad + params.BigCircleRad);
+      }
+      let tParticle = new Particle()
+        .setPosition(x, y, random(-5, 5))
+        .setVelocity(random(-params.traceVelRange, params.traceVelRange), random(-params.traceVelRange, params.traceVelRange), random(-params.traceVelRange, params.traceVelRange))
+        .setLifeReduction(lifeReductionMin, lifeReductionMax);
+      particles.push(tParticle);
+
+    }
+    else { // generate particles for circle
+      velRange = params.velRange;
+      let angle = random(TWO_PI);
+      let x = centerPos.x + cos(angle) * (SmallCircleRad + sin(frame * params.breathFreq) * breathingAmp);
+      let y = centerPos.y + sin(angle) * (SmallCircleRad + sin(frame * params.breathFreq) * breathingAmp);
+      let tParticle = new Particle()
+        .setPosition(x, y, random(-5, 5))
+        .setVelocity(random(-velRange, velRange), random(-velRange, velRange), random(-velRange, velRange))
+        .setLifeReduction(lifeReductionMin, lifeReductionMax);
+      particles.push(tParticle);
+    }
+  }
+}
+
+function move_center() {
+  if (pause == false && phase1Finish == false) {
+    trajAngle += params.moveSpeed;
+    velRange = 0.01;
+  }
+  if (trajAngle % 90 == 0) {
+    pause = true;
+  }
+  if (trajAngle <= 180) {
+    centerPos.x = sin(radians(trajAngle)) * params.BigCircleRad;
+    centerPos.y = cos(radians(trajAngle)) * params.BigCircleRad + params.BigCircleRad;
+  }
+  else if (trajAngle < 360) {
+    centerPos.x = sin(radians(trajAngle)) * params.BigCircleRad;
+    centerPos.y = -(cos(radians(trajAngle)) * params.BigCircleRad + params.BigCircleRad);
+  }
+  else if (trajAngle > 360) {
+    phase1Finish = true;
+    phase2StartTime = frame;
+  }
+}
+
+function phase1_updateParticles() {
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    p.flow(1);
+    p.move();
+    p.adjustVelocity(-0.005);
+    p.rotate();
+    p.age();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
+  }
+}
+
+// ====================== phase 2 ==========================
+function phase2_Rotation() {
+  while (particles.length < params.MAX_PARTICLE_NUMBER) {
+    if (trajAngle > params.traceAdjAngle) {
+      traceAdjAngle = params.traceAdjAngle
+    }
+    let angle = random() * (trajAngle - traceAdjAngle);
+    let x, y;
+    if (angle <= 180) {
+      x = sin(radians(angle)) * params.BigCircleRad;
+      y = cos(radians(angle)) * params.BigCircleRad + params.BigCircleRad;
+    }
+    else if (angle < 360) {
+      x = sin(radians(angle)) * params.BigCircleRad;
+      y = -(cos(radians(angle)) * params.BigCircleRad + params.BigCircleRad);
+    }
+    let rotationAngle = -radians(frame * rotationSpeed);
+    if (rotationSpeed < params.rotationSpeedTop) {
+      rotationSpeed += 0.00001;
+    }
+    let rotatedX = x * cos(rotationAngle) - y * sin(rotationAngle);
+    let rotatedY = x * sin(rotationAngle) + y * cos(rotationAngle);
+    x = rotatedX;
+    y = rotatedY;
+    console.log
+    let tParticle = new Particle()
+      .setPosition(x, y, random(-5, 5))
+      .setVelocity(random(-params.rotationParVelRange, params.rotationParVelRange), random(-params.rotationParVelRange, params.rotationParVelRange), random(-params.rotationParVelRange, params.rotationParVelRange))
+      .setLifeReduction(lifeReductionMin, lifeReductionMax);
+    particles.push(tParticle);
+  }
+  if (frame - phase2StartTime >= params.phase2WaitTime) {
+    spread = true;
+  }
+}
+
+function phase2_updateParticles() {
+  lifeReductionMin = 0.003;
+  lifeReductionMax = 0.01;
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    p.flow(10);
+    p.move();
+    p.adjustVelocity(-0.005);
+    p.rotate();
+    p.age();
+    if (spread == true && params.spreadRad < (params.BigCircleRad * 2 - 10)) {
+      params.spreadRad += params.spreadSpd;
+      p.check_dist_slice(params.spreadRad);
+    }
+    if (params.spreadRad >= (params.BigCircleRad * 2 - 20)) {
+      p.check_dist_slice(params.spreadRad);
+      if (!phase2stage3) {
+        phase2stage3 = frame;
+      }
+      else if ((frame - phase2stage3) > params.phase2stage3Time) {
+        phase2Finish = true;
+      }
+    }
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
+  }
+}
+
+// ====================== phase 3 ==========================
+
+let phase3Rad = params.BigCircleRad;
+
+function phase3_transmit() {
+  phase3_generatePar_stage1();
+}
+
+function phase3_generatePar_stage1() {
+  lifeReductionMin = 0.001;
+  lifeReductionMax = 0.01;
+  while (particles.length < params.MAX_PARTICLE_NUMBER) {
+    let angle = random(TWO_PI);
+    let x = cos(angle) * phase3Rad * 2;
+    let y = sin(angle) * phase3Rad * 2;
+    let tParticle = new Particle()
+      .setPosition(x, y, random(-5, 5))
+      .setVelocity(random(-params.velRange, params.velRange), random(-params.velRange, params.velRange), random(-params.velRange, params.velRange))
+      .setLifeReduction(lifeReductionMin, lifeReductionMax);
+    particles.push(tParticle);
+  }
+  if (frame - phase3StartTime > params.phase3stage1Time) {
+    phase3transmit = true;
+  }
+}
+
+function phase3_updateParticles() {
+  if (phase3transmit) {
+    params.MAX_PARTICLE_NUMBER -= 10;
+  }
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    if (phase3transmit) {
+      let frontForce = createVector(0, random(0.05, 0.2), 0);
+      p.applyForce(frontForce);
+    }
+    else {
+      p.flow(10);
+    }
+    p.move();
+    p.adjustVelocity(-0.005);
+    p.rotate();
+    p.age();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
+  }
+}
+
+
+// ======================= class ===========================
 class Particle {
   constructor() {
     this.pos = createVector();
-    this.base_pos = createVector();
-    this.rCircle = 0;
-    this.RCircle = 0;
-    this.r = 0;
     this.vel = createVector();
     this.acc = createVector();
-    //
-    this.cen = createVector();
-    this.prevCen = createVector();
-    this.mass = 1;
-    this.topSpd = 3;
-    //
-    this.color = {
-      r: random(0.8, 1.0),
-      g: random(0.8, 1.0),
-      b: random(0.8, 1.0)
-    };
-    //
+
+    this.scl = createVector(1, 1, 1);
+    this.mass = this.scl.x * this.scl.y * this.scl.z;
+
+    this.rot = createVector();
+    this.rotVel = createVector();
+    this.rotAcc = createVector();
+
     this.lifespan = 1.0;
-    this.lifeReduction = random(0.005, 0.01);
+    this.lifeReduction = 1;
     this.isDone = false;
   }
-
-  setCen(x, y, z) {
-    this.cen = createVector(x, y, z);
+  setPosition(x, y, z) {
+    this.pos = createVector(x, y, z);
     return this;
   }
-
-  update_center(x, y, z) {
-    this.prevCen = createVector(this.cen.x, this.cen.y, this.cen.z);
-    this.cen = createVector(x, y, z);
+  setVelocity(x, y, z) {
+    this.vel = createVector(x, y, z);
     return this;
   }
-
-  setVelMag(val) {
-    this.vel_mag = val;
+  setLifeReduction(min, max) {
+    this.lifeReduction = random(min, max);
     return this;
   }
-
-  move_to_center() {
-    let moveDir = this.cen.sub(this.prevCen);
-    moveDir.normalize();
-    moveDir.mult(0.01);
-    this.applyForce(moveDir);
-  }
-
-  setPos(r, R, sd) {
-    this.rCircle = r;
-    this.RCircle = R;
-    this.angle = radians(random(360));
-    let outer = abs(randomGaussian(0, sd));
-    if (outer > this.RCircle - this.rCircle) {
-      outer = this.RCircle - this.rCircle;
-    }
-    this.r = this.rCircle + outer;
-    let xPos = sin(this.angle) * this.r;
-    let yPos = cos(this.angle) * this.r;
-    this.base_pos = createVector(xPos, yPos, 0);
-    this.pos.set(this.base_pos);
+  setRotationAngle(x, y, z) {
+    this.rot = createVector(x, y, z);
     return this;
   }
-
-  flow() {
-    let posFreq = params.posFreq;
-    let timeFreq = params.timeFreq;
-    let flowForce = params.flowForce;
-    let xFreq = this.pos.x * posFreq + frame * timeFreq;
-    let yFreq = this.pos.y * posFreq + frame * timeFreq;
-    let noiseValueX = map(noise(xFreq, yFreq), 0.0, 1.0, -1.0, 1.0);
-    let noiseValueY = map(noise(xFreq + 1000, yFreq + 1000), 0.0, 1.0, -1.0, 1.0);
-    let force = new p5.Vector(noiseValueX, noiseValueY, 0);
-    force.normalize();
-    force.mult(flowForce);
-    this.applyForce(force);
+  setRotationVelocity(x, y, z) {
+    this.rotVel = createVector(x, y, z);
+    return this;
   }
-
-  attractToBase(range) {
-    let dist = this.pos.dist(this.base_pos);
-    let coeff = (this.r - this.rCircle) / (this.RCircle - this.rCircle);
-    let moveRange = range * coeff;
-    if (dist > moveRange) {
-      let attraction = p5.Vector.sub(this.base_pos, this.pos);
-      attraction.mult(dist);
-      attraction.mult(0.001);
-      this.applyForce(attraction);
-    }
+  setScale(w, h = w, d = w) {
+    const minScale = 0.01;
+    if (w < minScale) w = minScale;
+    if (h < minScale) h = minScale;
+    if (d < minScale) d = minScale;
+    this.scl = createVector(w, h, d);
+    this.mass = this.scl.x * this.scl.y * this.scl.z;
+    return this;
   }
-
+  move() {
+    this.vel.add(this.acc);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
+  }
+  adjustVelocity(amount) {
+    this.vel.mult(1 + amount);
+  }
+  rotate() {
+    this.rotVel.add(this.rotAcc);
+    this.rot.add(this.rotVel);
+    this.rotAcc.mult(0);
+  }
   applyForce(f) {
     let force = f.copy();
     force.div(this.mass);
     this.acc.add(force);
   }
-
-  updateBase(val) {
-    this.r += val;
-    let xPos = sin(this.angle) * this.r;
-    let yPos = cos(this.angle) * this.r;
-    this.base_pos.set(xPos, yPos, 0);
-  }
-
-  move() {
-    if (this.vel.mag() < this.topSpd) {
-      this.vel.add(this.acc);
+  reappear() {
+    if (this.pos.z > WORLD_SIZE / 2) {
+      this.pos.z = -WORLD_SIZE / 2;
     }
-    this.pos.add(this.vel);
-    this.acc.mult(0);
+  }
+  disappear() {
+    if (this.pos.z > WORLD_SIZE / 2) {
+      this.isDone = true;
+    }
+  }
+  age() {
+    this.lifespan -= this.lifeReduction;
+    if (this.lifespan <= 0) {
+      this.lifespan = 0;
+      this.isDone = true;
+    }
+  }
+  attractedTo(x, y, z) {
+    let target = new p5.Vector(x, y, z);
+    let force = p5.Vector.sub(target, this.pos);
+    if (force.mag() < 100) {
+      force.mult(-0.005);
+    } else {
+      force.mult(0.0001);
+    }
+    this.applyForce(force);
+  }
+  flow(spd) {
+    let xFreq = this.pos.x * 0.05 + frame * 0.005;
+    let yFreq = this.pos.y * 0.05 + frame * 0.005;
+    let zFreq = this.pos.z * 0.05 + frame * 0.005;
+    let noiseValue = map(noise(xFreq, yFreq, zFreq), 0.0, 1.0, -1.0, 1.0);
+    let force = new p5.Vector(cos(frame * 0.005), sin(frame * 0.005), sin(frame * 0.002));
+    force.normalize();
+    force.mult(noiseValue * spd * 0.01);
+    this.applyForce(force);
+  }
+  check_dist_reduce(limit) {
+    let distance = this.pos.mag();
+    if (distance < limit) {
+      this.lifeReduction *= 4;
+    }
+  }
+  check_dist_slice(limit) {
+    let distance = this.pos.mag();
+    if (distance < limit) {
+      this.isDone = true;
+    }
   }
 }
 
-document.addEventListener('click', function (event) {
-  getMouse(event);
+document.addEventListener('click', function () {
+  mouseIsClicked = true;
+  console.log("mouse is clicked");
 });
 
-function getMouse(event) {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  mouseX = ((event.clientX / width) * 2 - 1) * params.WORLD_WIDTH;
-  mouseY = (-(event.clientY / height) * 2 + 1) * params.WORLD_HEIGHT;
-}
