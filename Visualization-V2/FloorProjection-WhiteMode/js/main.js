@@ -140,9 +140,9 @@ function updateThree() {
     positionArray[ptIndex + 1] = p.pos.y;
     positionArray[ptIndex + 2] = p.pos.z;
     //color
-    colorArray[ptIndex + 0] = 1.0 * p.lifespan;
-    colorArray[ptIndex + 1] = 1.0 * p.lifespan;
-    colorArray[ptIndex + 2] = 1.0 * p.lifespan;
+    colorArray[ptIndex + 0] = 0;
+    colorArray[ptIndex + 1] = 0;
+    colorArray[ptIndex + 2] = 0;
   }
   pointCloud.geometry.setDrawRange(0, particles.length); // ***
   pointCloud.geometry.attributes.position.needsUpdate = true;
@@ -158,7 +158,7 @@ function getPoints(objects) {
 
   for (let obj of objects) {
     vertices.push(obj.pos.x, obj.pos.y, obj.pos.z);
-    colors.push(1, 1, 1);
+    colors.push(0, 0, 0);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -167,7 +167,7 @@ function getPoints(objects) {
   geometry.setDrawRange(0, drawCount);
   const texture = new THREE.TextureLoader().load('assets/particle_texture.jpg');
   const material = new THREE.PointsMaterial({
-    //color: 0xFF9911,
+    color: 0x000000,
     vertexColors: true,
     size: 3,
     sizeAttenuation: true, // default

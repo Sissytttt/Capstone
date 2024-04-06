@@ -1,5 +1,3 @@
-
-
 let params = {
   MAX_PARTICLE_NUMBER: 5000,
   WORLD_WIDTH: 1600,
@@ -11,7 +9,7 @@ let params = {
   AngleRange: 30,
   thingLifespan: 1,
   BranchAngleRange: 70,
-  anglePossibility: 0.01,
+  anglePossibility: 0.05,
   branchPossibility: 0.008,
   moveSpdMin: 0,
   moveSpdMax: 1,
@@ -26,6 +24,13 @@ let params = {
   YANG: false,
   YIN: false,
 };
+
+let control = {
+  Weight: 5,
+  Time: 5, // acceleration
+  Space: 5,
+  Flow: 5,
+}
 
 let things = [];
 
@@ -70,10 +75,19 @@ function setupThree() {
   ModeControl.add(params, "YANG");
   ModeControl.add(params, "YIN");
 
+  let ControlFolder = gui.addFolder("CONTROL");
+  ControlFolder.open();
+  ControlFolder.add(control, "Weight", 0, 10, 0.1);
+  ControlFolder.add(control, "Time", 0, 10, 0.1);
+  ControlFolder.add(control, "Space", 0, 10, 0.1);
+  ControlFolder.add(control, "Flow", 0, 10, 0.1);
+
+
 }
 
 function updateThree() {
-  mode_Control();
+  // mode_Control();
+  controller();
   add_Lightning(0.01);
   if (particles.length < params.MAX_PARTICLE_NUMBER) {
     for (const thing of things) {
@@ -162,72 +176,6 @@ function getPoints() {
   const points = new THREE.Points(geometry, material);
   return points;
 }
-// ================ YIN YANG CONTROL =====================
-
-function mode_Control() {
-  if (params.YANG == true) {
-    // line
-    // params.AngleRange= 30;
-    // params.BranchAngleRange= 70;
-    params.anglePossibility = 0.08;
-    params.branchPossibility = 0.07;
-    params.moveSpdMin = 3;
-    params.moveSpdMax = 5;
-    params.thickness = noise(frame * 0.05) * 3;
-    params.particleNum = 1;
-    params.thingLifespan = 0.5;
-
-    // particles
-    params.particleLifeSpan = 0.3;
-    params.flowPosFreq = 0.05;
-    params.flowTimeFreq = 0.01;
-    params.flowSpd = 0.05;
-  }
-
-  else if (params.YIN == true) {
-    // // line
-    // // params.AngleRange= 30;
-    // // params.BranchAngleRange= 70;
-    // params.anglePossibility = 0.04;
-    // params.branchPossibility = 0.05;
-    // params.moveSpdMin = 0.3;
-    // params.moveSpdMax = 2;
-    // params.thickness = noise(frame * 0.05) * 1;
-    // params.particleNum = 1;
-    // params.thingLifespan = 1;
-
-    // // particles
-    // params.particleLifeSpan = 0.3;
-    // params.flowPosFreq = 0.05;
-    // params.flowTimeFreq = 0.01;
-    // params.flowSpd = 0.05;
-  }
-
-
-  else {
-    // line
-    // params.StartPoints = 5;
-    // params.AngleRange = 30;
-    params.BranchAngleRange = 70;
-    params.anglePossibility = 0.01;
-    params.branchPossibility = 0.006;
-    params.moveSpdMin = 1;
-    params.moveSpdMax = 2;
-    params.thickness = noise(frame * 0.05) * 1;
-    params.particleNum = 1;
-    params.thingLifespan = 1;
-
-    // particles
-    params.particleLifeSpan = 1.0;
-    params.flowPosFreq = 0.03;
-    params.flowTimeFreq = 0.005;
-    params.flowSpd = 0.01;
-  }
-
-}
-
-
-
 
 // ================== UPDATE LIGHTNING ===================
 function add_Lightning(possibility) {
@@ -411,5 +359,120 @@ class Particle {
     force.mult(params.flowSpd);
     this.applyForce(force);
   }
+}
 
+
+// ================ YIN YANG CONTROL =====================
+
+function mode_Control() {
+  if (params.YANG == true) {
+    // line
+    // params.AngleRange= 30;
+    // params.BranchAngleRange= 70;
+    params.anglePossibility = 0.08;
+    params.branchPossibility = 0.07;
+    params.moveSpdMin = 3;
+    params.moveSpdMax = 5;
+    params.thickness = noise(frame * 0.05) * 3;
+    params.particleNum = 1;
+    params.thingLifespan = 0.5;
+
+    // particles
+    params.particleLifeSpan = 0.3;
+    params.flowPosFreq = 0.05;
+    params.flowTimeFreq = 0.01;
+    params.flowSpd = 0.05;
+  }
+
+  else if (params.YIN == true) {
+    // // line
+    // // params.AngleRange= 30;
+    // // params.BranchAngleRange= 70;
+    // params.anglePossibility = 0.04;
+    // params.branchPossibility = 0.05;
+    // params.moveSpdMin = 0.3;
+    // params.moveSpdMax = 2;
+    // params.thickness = noise(frame * 0.05) * 1;
+    // params.particleNum = 1;
+    // params.thingLifespan = 1;
+
+    // // particles
+    // params.particleLifeSpan = 0.3;
+    // params.flowPosFreq = 0.05;
+    // params.flowTimeFreq = 0.01;
+    // params.flowSpd = 0.05;
+  }
+
+
+  else {
+    // line
+    // params.StartPoints = 5;
+    // params.AngleRange = 30;
+    params.BranchAngleRange = 70;
+    params.anglePossibility = 0.01;
+    params.branchPossibility = 0.006;
+    params.moveSpdMin = 1;
+    params.moveSpdMax = 2;
+    params.thickness = noise(frame * 0.05) * 1;
+    params.particleNum = 1;
+    params.thingLifespan = 1;
+
+    // particles
+    params.particleLifeSpan = 1.0;
+    params.flowPosFreq = 0.03;
+    params.flowTimeFreq = 0.005;
+    params.flowSpd = 0.01;
+  }
+
+}
+
+
+
+
+function controller() {
+  // weight
+  if (control.Weight <= 5) {
+    params.branchPossibility = map(control.Weight, 0, 5, 0.004, 0.0055);
+    params.moveSpdMin = map(control.Weight, 0, 5, 0.01, 1);
+    params.moveSpdMax = map(control.Weight, 0, 5, 0.3, 2);
+    params.thickness = floor(map(control.Weight, 0, 10, 1, 4)) * noise(frame * 0.05);
+  }
+  else {
+    params.branchPossibility = map(control.Weight, 5, 10, 0.0055, 0.015);
+    params.moveSpdMin = map(control.Weight, 5, 10, 0.5, 5);
+    params.moveSpdMax = map(control.Weight, 5, 10, 1, 7);
+    params.thickness = floor(map(control.Weight, 0, 10, 1, 4)) * noise(frame * 0.05);
+  }
+
+  // time 
+  if (control.Time <= 5) {
+    params.flowSpd = map(control.Time, 0, 5, 0.005, 0.01);
+    params.particleLifeSpan = map(control.Time, 0, 5, 1.0, 0.6);
+    params.flowTimeFreq = map(control.Time, 0, 5, 0.002, 0.005);
+  }
+  else {
+    params.flowSpd = map(control.Time, 5, 10, 0.01, 0.03);
+    params.particleLifeSpan = map(control.Time, 5, 10, 0.6, 0.3);
+    params.flowTimeFreq = map(control.Time, 5, 10, 0.005, 0.01);
+  }
+
+  // Space
+  if (control.Space <= 5) {
+    params.anglePossibility = map(control.Space, 0, 5, 0.01, 0.05);
+    params.BranchAngleRange = map(control.Space, 0, 5, 60, 80);
+    params.angleRange = map(control.Space, 0, 5, 20, 35);
+  }
+  else {
+    params.anglePossibility = map(control.Space, 5, 10, 0.05, 0.2);
+    params.BranchAngleRange = map(control.Space, 0, 5, 60, 80);
+    params.BranchAngleRange = map(control.Space, 5, 10, 35, 55);
+  }
+
+  // flow
+  if (control.Flow <= 5) {
+    params.flowPosFreq = map(control.Flow, 0, 5, 0.01, 0.06);
+  }
+  else {
+    params.flowPosFreq = map(control.Flow, 5, 10, 0.06, 0.2);
+  }
 }

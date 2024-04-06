@@ -16,6 +16,12 @@ let params = {
   MoveSpd: 0.005,
 };
 
+let control = {
+  Weight: 5,
+  Time: 5, // acceleration
+  Space: 5,
+  Flow: 5,
+}
 
 
 let LinePos = [];
@@ -59,6 +65,12 @@ function setupThree() {
   ParticleFolder.add(params, "FlowTimeFreq", 0, 0.5, 0.0001);
   ParticleFolder.add(params, "MoveSpd", 0, 0.5, 0.0001);
 
+  let ControlFolder = gui.addFolder("CONTROL");
+  ControlFolder.open();
+  ControlFolder.add(control, "Weight", 0, 10, 0.1);
+  ControlFolder.add(control, "Time", 0, 10, 0.1);
+  ControlFolder.add(control, "Space", 0, 10, 0.1);
+  ControlFolder.add(control, "Flow", 0, 10, 0.1);
 
 }
 

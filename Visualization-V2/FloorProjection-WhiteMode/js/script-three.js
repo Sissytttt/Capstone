@@ -7,6 +7,7 @@ let time, frame = 0;
 
 function initThree() {
   scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
   const fov = 75;
   const aspectRatio = window.innerWidth / window.innerHeight;
   const near = 0.1;

@@ -8,14 +8,30 @@ let params = {
   Circle_Num: 30,
   BendMagnitude: 30,
   sizeMin: 400,
-  sizeMax: 800,
+  sizeMax: 1000,
+  breathAmplMin: 30,
+  breathAmplMax: 100,
+  breathFreq: 0.02,
+  gaussianSD: 100,
+  moveRangeMin: 100,
+  moveRangeMax: 400,
+  moveThreshold: 0.5, // 0~1, >threshold的比例是会有起伏的比例
+  WaveFrameFreq: 0.004,
+  WaveRadFreq: 0.01,
   // 
   FlowPosFreq: 0.005,
   FlowTimeFreq: 0.005,
   MoveSpd: 0.001,
+  lifeReductionMin: 0.005,
+  lifeReductionMax: 0.02,
 };
 
-
+let control = {
+  Weight: 5,
+  Time: 5, // acceleration
+  Space: 5,
+  Flow: 5,
+}
 
 let CirclePos = [];
 let Circles = [];
@@ -23,8 +39,12 @@ let Circles = [];
 let pointCloud;
 let particles = [];
 
-function setupThree() {
+let sinArray = [];
+let cosArray = [];
+let sinCosResolution = 360 * 2;
 
+function setupThree() {
+  setupFastSinCos();
   set_Up_Circles();
   for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
     let random_circle = Math.floor(Math.random() * Circles.length);
@@ -53,15 +73,23 @@ function setupThree() {
   ParticleFolder.add(params, "FlowTimeFreq", 0, 0.5, 0.0001);
   ParticleFolder.add(params, "MoveSpd", 0, 0.5, 0.0001);
 
+  let ControlFolder = gui.addFolder("CONTROL");
+  ControlFolder.open();
+  ControlFolder.add(control, "Weight", 0, 10, 0.1);
+  ControlFolder.add(control, "Time", 0, 10, 0.1);
+  ControlFolder.add(control, "Space", 0, 10, 0.1);
+  ControlFolder.add(control, "Flow", 0, 10, 0.1);
 
 }
 
 function updateThree() {
-
+  controller();
   // update circle pos
   for (let i = 0; i < Circles.length; i++) {
     let circle = Circles[i];
+    circle.breath();
     circle.update_pos();
+    circle.set_breath_FreqAmpl(params.breathFreq, params.breathAmplMin, params.breathAmplMax);
   }
   // add particles to the circles
   while (particles.length < params.MAX_PARTICLE_NUMBER) {
@@ -95,7 +123,7 @@ function updateThree() {
     colorArray[ptIndex + 1] = p.color.g * p.lifespan;
     colorArray[ptIndex + 2] = p.color.b * p.lifespan;
   }
-  pointCloud.geometry.setDrawRange(0, particles.length); // ***
+  pointCloud.geometry.setDrawRange(0, particles.length);
   pointCloud.geometry.attributes.position.needsUpdate = true;
   pointCloud.geometry.attributes.color.needsUpdate = true;
 
@@ -115,10 +143,8 @@ function getPoints(objects) {
   const material = new THREE.PointsMaterial({
     vertexColors: true,
     // sizeAttenuation: true,
-
     //opacity: 0.50,
     //transparent: true,
-
     depthTest: false,
     blending: THREE.AdditiveBlending,
   });
@@ -129,13 +155,18 @@ function getPoints(objects) {
 
 function set_Up_Circles() {
   for (let i = 0; i < params.Circle_Num; i++) {
+    let rAdj = abs(randomGaussian(0, params.gaussianSD));
+    if (rAdj > params.sizeMax - params.sizeMin) {
+      rAdj = params.sizeMax - params.sizeMin;
+    }
     let circle = new Circle()
+      .set_rAdj(rAdj)
       .set_pos(0, 0, 0)
-      .set_size(random(params.sizeMin, params.sizeMax));
+      .set_size(params.sizeMin + rAdj)
+      .set_breath_FreqAmpl(params.breathFreq, params.breathAmplMin, params.breathAmplMax);
     Circles.push(circle);
   }
 }
-
 
 // ===================================================================
 class Circle {
@@ -154,23 +185,35 @@ class Circle {
   }
   set_size(r) {
     this.radians = r;
+    this.updatedR = this.radians;
     return this;
+  }
+  set_rAdj(rAdj) { // outer distance toward the base rad // remember for calculating breath ampl
+    this.rAdj = rAdj;
+    return this;
+  }
+  set_breath_FreqAmpl(freq, min, max) {
+    let breathAmp = map(this.rAdj, 0, params.sizeMax - params.sizeMin, min, max);
+    this.breathFreq = freq;
+    this.breathAmpl = breathAmp;
+    return this;
+  }
+  breath() { // update R
+    this.updatedR = this.radians + mSin(frame * this.breathFreq) * this.breathAmpl;
   }
   addParticles() {
     let randomAngle = random(2 * PI);
-    let randomPosX = sin(randomAngle) * this.radians;
-    let randomPosZ = cos(randomAngle) * this.radians;
-    let moveRange = map(this.radians, params.sizeMin, params.sizeMax, 100, 400);
+    let randomPosX = mSin(randomAngle) * this.updatedR;
+    let randomPosZ = mCos(randomAngle) * this.updatedR;
+    let moveRange = map(this.radians, params.sizeMin, params.sizeMax, params.moveRangeMin, params.moveRangeMin);
     let particle = new Particle()
       .set_pos(this.pos.x + randomPosX, this.pos.y, this.pos.z + randomPosZ)
       .set_angle(randomAngle)
-      .set_rad(this.radians)
+      .set_rad(this.radians) // 粒子所在的相对大圆的角度位置，用于之后flow的noise的参数（连贯数值）
       .set_moveRange(moveRange);
     particles.push(particle);
   }
-
 }
-
 
 // ============================
 class Particle {
@@ -185,7 +228,7 @@ class Particle {
     this.mass = this.scl.x * this.scl.y * this.scl.z;
 
     this.lifespan = 1.0;
-    this.lifeReduction = random(0.005, 0.01);
+    this.lifeReduction = random(params.lifeReductionMin, params.lifeReductionMax);
     this.isDone = false;
 
     this.moveScl = random();
@@ -216,16 +259,14 @@ class Particle {
   }
   wave() {
     let angleFreq = this.angle;
-    let radFreq = this.rad * 0.01;
-    let frameFreq = frame * 0.004;
+    let radFreq = this.rad * params.WaveRadFreq;
+    let frameFreq = frame * params.WaveFrameFreq;
     let noiseVal = noise(angleFreq, radFreq, frameFreq);
     let yPos = 0;
-    if (noiseVal > 0.5) {
-      yPos = map(noiseVal, 0.5, 1, 0, this.moveRange);
+    if (noiseVal > params.moveThreshold) {
+      yPos = map(noiseVal, params.moveThreshold, 1, 0, this.moveRange);
     }
     this.pos.y = yPos;
-
-
   }
 
   move() {
@@ -272,7 +313,74 @@ class Particle {
     this.apply_force(force);
   }
 
-  flow_up_down() {
+}
 
+
+function setupFastSinCos() {
+  for (let i = 0; i < sinCosResolution; i++) {
+    let deg = map(i, 0, sinCosResolution, 0, 360);
+    let rad = radians(deg);
+    sinArray.push(sin(rad));
+    cosArray.push(cos(rad));
+  }
+}
+
+function mSin(rad) {
+  let angle = rad % TWO_PI;
+  if (angle < 0) angle += TWO_PI;
+  let index = floor(map(angle, 0, TWO_PI, 0, sinCosResolution));
+  return sinArray[index];
+}
+
+function mCos(rad) {
+  let angle = rad % TWO_PI;
+  if (angle < 0) angle += TWO_PI;
+  let index = floor(map(angle, 0, TWO_PI, 0, sinCosResolution));
+  return cosArray[index];
+}
+
+
+function controller() {
+  // weight
+  if (control.Weight <= 5) {
+    params.moveRangeMin = map(control.Weight, 0, 5, 50, 100);
+    params.moveRangeMax = map(control.Weight, 0, 5, 200, 400);
+  }
+  else {
+    params.moveRangeMin = map(control.Weight, 5, 10, 300, 900);
+    params.moveRangeMax = map(control.Weight, 5, 10, 500, 2000);
+    params.moveThreshold = map(control.Weight, 5, 10, 0.5, 0.3);
+  }
+
+  // time // 变换不连贯
+  if (control.Time <= 5) {
+    params.WaveFrameFreq = map(control.Time, 0, 5, 0.002, 0.004);
+    // params.WaveRadFreq = map(control.Time, 0, 5, 0.002, 0.004);
+  }
+  else {
+    params.WaveFrameFreq = map(control.Time, 5, 10, 0.004, 0.01);
+    // params.WaveRadFreq = map(control.Time, 5, 10, 0.004, 0.01);
+  }
+
+  // Space
+  if (control.Space <= 5) {
+    params.breathAmplMin = map(control.Space, 0, 5, 10, 25);
+    params.breathAmplMax = map(control.Space, 0, 5, 50, 100);
+  }
+  else {
+    params.breathAmplMin = map(control.Space, 5, 10, 25, 40);
+    params.breathAmplMax = map(control.Space, 5, 10, 100, 500);
+  }
+
+  // flow
+  if (control.Flow <= 5) {
+    params.breathFreq = map(control.Flow, 0, 5, 0.01, 0.03);
+    params.lifeReductionMin = map(control.Flow, 0, 5, 0.004, 0.006);
+    params.lifeReductionMax = map(control.Flow, 0, 5, 0.01, 0.02);
+  }
+  else {
+    params.breathFreq = map(control.Flow, 5, 10, 0.03, 0.05);
+    params.lifeReductionMin = map(control.Flow, 5, 10, 0.006, 0.01);
+    params.lifeReductionMax = map(control.Flow, 5, 10, 0.02, 0.05);
   }
 }
