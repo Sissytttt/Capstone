@@ -219,7 +219,7 @@ class Particle {
   }
 
   updateBase(val) {
-    // console.log(val)
+    // console.log(val);
     this.r += val;
     let xPos = sin(this.angle) * this.r;
     let yPos = cos(this.angle) * this.r;

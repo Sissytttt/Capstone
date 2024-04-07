@@ -1,3 +1,17 @@
+// interaction process:
+// phase 1:
+//   small circles leading audiance to walk in a YinYang shape
+// phase 2: 
+//   the YinYang rotate and spread into a circle
+// phase 3:
+//   the particles on the circle transmit to the front wall
+// phase 4: (start inteaction)
+//   the circle become smaller showing the interaction area; user interact with the front projection
+// phase 5: (after inteaction, when the user step out of the circle)
+//   the cirlce spread out and particles disappear
+// reture to phase 1, starts a new cycle
+
+
 let params = {
   particleNum: 0,
   MAX_PARTICLE_NUMBER: 2000,
@@ -39,15 +53,34 @@ let params = {
   phase2_stage2Time: 500, // wait until spread
   phase2_stage3Time: 300,
   //phase 3
+  phase3_particleNumber: 5000, // same with phase2_particleNumber
   phase3_particleVel: 0.05,
-  phase3_lifeReductionMin: 0.001,
+  phase3_lifeReductionMin: 0.003,
   phase3_lifeReductionMax: 0.01,
   phase3_stage1Time: 100,
   phase3_moveUpSpd: 0.01,
+  phase3_particleReductionSpd: 10,
+  // phase 4
+  phase4_particleNumber: 1000,
+  phase4_circle_r: 400,
+  phase4_circle_R: 800,
+  phase4_circle_sd: 6,
+  phase4_circle_posFreq: 0.05,
+  phase4_circle_timeFreq: 0.001,
+  phase4_circle_flowForce: 0.001,
+  phase4_breathSpeed: 0.02, // small - slow & big ??? both spd&amp
+  phase4_attractToBaseRange: 0,// doesnt matter
+  phase4_particleNoise: 20,
+  phase4_lifeReductionMin: 0.001,
+  phase4_lifeReductionMax: 0.01,
+  //
+  phase5_angleNoise: 0.05,
+  phase5_repulseSpdMin: 0.00000001,
+  phase5_repulseSpdMax: 0.00005,
 };
 
 
-let testMode = false;
+let testMode = true;
 
 const WORLD_SIZE = 1000;
 
@@ -78,8 +111,12 @@ let phase2StartTime = 0;
 let phase2stage3; // start time
 let phase2stage2Start = false;
 let phase2Finish = false;
+let phase3Finish = false;
 let phase3StartTime = 0;
 let phase3transmit = false;
+let phase4Finish = false;
+let phase5Finish = false; 14
+
 
 // random initialization
 let init_randomAngle;
@@ -91,7 +128,9 @@ function setupThree() {
     params.phase1_trace_moveSpd *= 10;
     params.phase1_shrinkSpeed *= 10;
     params.phase2_stage2Time = 50;
-    // params.phase2_spreadSpd = 0.01;
+    // params.phase3_particleReductionSpd = 50;
+    params.phase2_spreadSpd = 0.01;
+    params.phase3_stage1Time = 5;
   }
   centerPos = createVector(0, 0);
 
@@ -116,7 +155,6 @@ function setupThree() {
 }
 
 function updateThree() {
-  params.particleNum = particles.length;
   if (phase1Finish == false) {
     phase1_bagua_trace();
     phase1_updateParticles();
@@ -125,11 +163,22 @@ function updateThree() {
     phase2_Rotation();
     phase2_updateParticles();
   }
-  else {
+  else if (phase3Finish == false) {
     phase3_transmit();
     phase3_updateParticles();
   }
-  // then update the points
+  else if (phase4Finish == false) {
+    phase4_generateParticles();
+    phase4_updateParticles();
+  }
+  else {
+    phase5_updateParticles_disappear();
+  }
+
+  params.particleNum = particles.length; // update GUI
+
+
+  // update the points' info
   let positionArray = pointCloud.geometry.attributes.position.array;
   let colorArray = pointCloud.geometry.attributes.color.array;
   for (let i = 0; i < particles.length; i++) {
@@ -185,6 +234,7 @@ function getPoints(objects) {
 
 // ====================== phase 1 ==========================
 function phase1_bagua_trace() {
+  params.phase3_particleNumber = params.phase2_particleNumber; // refresh phase3_particleNumber
   move_center();
   phase1_generateParticles();
   if (pause == true && mouseIsClicked == false) {
@@ -427,11 +477,11 @@ function phase2_updateParticles() {
 let phase3Rad = params.BigCircleRad;
 
 function phase3_transmit() {
-  phase3_generatePar_stage1();
+  phase3_generateParticles();
 }
 
-function phase3_generatePar_stage1() {
-  while (particles.length < params.phase2_particleNumber) {
+function phase3_generateParticles() {
+  while (particles.length < params.phase3_particleNumber) {
     let angle = random(TWO_PI);
     let x = mCos(angle) * phase3Rad * 2;
     let y = mSin(angle) * phase3Rad * 2;
@@ -443,12 +493,18 @@ function phase3_generatePar_stage1() {
   }
   if (frame - phase3StartTime > params.phase3_stage1Time) {
     phase3transmit = true;
+
   }
 }
 
 function phase3_updateParticles() {
-  if (phase3transmit) {
-    params.phase2_particleNumber -= 10;
+  if (phase3transmit && params.phase3_particleNumber > params.phase4_particleNumber) {
+    params.phase3_particleNumber -= params.phase3_particleReductionSpd;
+  }
+  else {
+    phase3transmit = false;
+    phase3Finish = true;
+    // phase4Start = true;
   }
   for (let i = 0; i < particles.length; i++) {
     let p = particles[i];
@@ -468,6 +524,52 @@ function phase3_updateParticles() {
   }
 }
 
+
+// ====================== phase 4 ==========================
+
+function phase4_generateParticles() {
+  while (particles.length < params.phase4_particleNumber) {
+    p = new ParticleWithBase()
+      .setCen(0, 0, 0)
+      .setLifeReduction(params.phase4_lifeReductionMin, params.phase4_lifeReductionMax)
+      .setPos(params.phase4_circle_r, params.phase4_circle_R, params.phase4_circle_sd)
+      .setVelMag(random(3, 5));
+    particles.push(p);
+  }
+}
+
+
+function phase4_updateParticles() {
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    p.flow();
+    p.attractToBase(params.phase4_attractToBaseRange);
+    p.updateBase(mSin(frame * params.phase4_breathSpeed));
+    p.move();
+    p.age();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
+  }
+
+}
+// ====================== phase 5 ==========================
+
+function phase5_updateParticles_disappear() {
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    p.flow();
+    p.move();
+    p.age();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
+    p.phase4_age();
+    p.repulse_from(0, 0, 0);
+  }
+}
 
 // ======================= class ===========================
 class Particle {
@@ -558,7 +660,7 @@ class Particle {
     }
     this.applyForce(force);
   }
-  flow(spd) {
+  flow(spd = 1) {
     let xFreq = this.pos.x * 0.05 + frame * 0.005;
     let yFreq = this.pos.y * 0.05 + frame * 0.005;
     let noiseValue = map(noise(xFreq, yFreq), 0.0, 1.0, -1.0, 1.0);
@@ -597,6 +699,148 @@ class Particle {
       this.isDone = true;
     }
   }
+  attractToBase() {
+  }
+  updateBase() {
+  }
+  phase4_age() {
+  }
+  repulse_from() {
+  }
+}
+
+
+class ParticleWithBase {
+  constructor() {
+    this.pos = createVector();
+    this.base_pos = createVector();
+    this.rCircle = 0;
+    this.RCircle = 0;
+    this.r = 0;
+    this.vel = createVector();
+    this.acc = createVector();
+    //
+    this.lifespan = 1.0;
+    this.lifeReduction = 1;
+    this.isDone = false;
+    //
+    this.cen = createVector();
+    this.mass = 1;
+    //
+    this.color = {
+      r: 1,
+      g: 1,
+      b: 1,
+    };
+    //
+    this.lifespan = 1.0;
+    this.lifeReduction = random(0.005, 0.01);
+    this.isDone = false;
+  }
+
+  setCen(x, y, z) {
+    this.cen = createVector(x, y, z);
+    return this;
+  }
+
+  setVelMag(val) {
+    this.vel_mag = val;
+    return this;
+  }
+
+  setPos(r, R, sd) {
+    // // normal
+    // let angle = radians(random(360));
+    // this.base_pos = createVector(sin(angle) * random(this.startR, this.startR + 300), cos(angle) * random(this.startR, this.startR + 300), 0);
+    // this.pos.set(this.base_pos);
+    //
+    this.rCircle = r;
+    this.RCircle = R;
+    this.angle = radians(random(360));
+    let outer = abs(randomGaussian(0, sd));
+    if (outer > this.RCircle - this.rCircle) {
+      outer = this.RCircle - this.rCircle;
+    }
+    this.r = this.rCircle + outer;
+    let xPos = mSin(this.angle) * this.r;
+    let yPos = mCos(this.angle) * this.r;
+    this.base_pos = createVector(xPos, yPos, 0);
+    this.pos.set(this.base_pos);
+    return this;
+  }
+
+  flow() {
+    let posFreq = params.phase4_circle_posFreq;
+    let timeFreq = params.phase4_circle_timeFreq;
+    let flowForce = params.phase4_circle_flowForce;
+    let xFreq = this.pos.x * posFreq + frame * timeFreq;
+    let yFreq = this.pos.y * posFreq + frame * timeFreq;
+    let noiseValueX = map(noise(xFreq, yFreq), 0.0, 1.0, -1.0, 1.0);
+    let noiseValueY = map(noise(xFreq + 1000, yFreq + 1000), 0.0, 1.0, -1.0, 1.0);
+    let force = new p5.Vector(noiseValueX, noiseValueY, 0);
+    force.normalize();
+    force.mult(flowForce);
+    this.applyForce(force);
+  }
+
+  attractToBase(range) {
+    let dist = this.pos.dist(this.base_pos);
+    let coeff = (this.r - this.rCircle) / (this.RCircle - this.rCircle);
+    let moveRange = range * coeff;
+    if (dist > moveRange) {
+      let attraction = p5.Vector.sub(this.base_pos, this.pos);
+      attraction.mult(dist);
+      attraction.mult(0.001);
+      this.applyForce(attraction);
+    }
+  }
+
+  repulse_from(x, y, z) {
+    let target = new p5.Vector(x, y, z);
+    let force = p5.Vector.sub(this.pos, target);
+    // let forceMag = noise(this.angle * params.phase5_angleNoise);
+    let forceMag = noise(this.angle);
+    let mag = map(forceMag, 0, 1, params.phase5_repulseSpdMin, params.phase5_repulseSpdMax)
+    force.mult(mag);
+    // force.mult(0.0001);
+    this.applyForce(force);
+  }
+
+
+  applyForce(f) {
+    let force = f.copy();
+    force.div(this.mass);
+    this.acc.add(force);
+  }
+
+  updateBase(val) {
+    this.r += val;
+    let xPos = mSin(this.angle) * this.r;
+    let yPos = mCos(this.angle) * this.r;
+    this.base_pos.set(xPos, yPos, 0);
+  }
+
+  move() {
+    this.vel.add(this.acc);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
+  }
+
+  setLifeReduction(min, max) {
+    this.lifeReduction = random(min, max);
+    return this;
+  }
+  phase4_age() {
+    this.lifespan -= this.lifeReduction;
+    if (this.lifespan <= 0) {
+      this.lifespan = 0;
+      this.isDone = true;
+    }
+  }
+  age() {
+  }
+  rotate() {
+  }
 }
 
 
@@ -628,3 +872,48 @@ document.addEventListener('click', function () {
   console.log("mouse is clicked");
 });
 
+document.addEventListener('keydown', onKeyDown);
+function onKeyDown(event) {
+  switch (event.key) {
+    case '1':
+      phase1Finish = false;
+      phase2Finish = false;
+      phase3Finish = false;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 1");
+      break;
+    case '2':
+      phase1Finish = true;
+      phase2Finish = false;
+      phase3Finish = false;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 2");
+      break;
+    case '3':
+      phase1Finish = true;
+      phase2Finish = true;
+      phase3Finish = false;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 3");
+      break;
+    case '4':
+      phase1Finish = true;
+      phase2Finish = true;
+      phase3Finish = true;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 4");
+      break;
+    case '5':
+      phase1Finish = true;
+      phase2Finish = true;
+      phase3Finish = true;
+      phase4Finish = true;
+      phase5Finish = false;
+      console.log("keydown 5");
+      break;
+  }
+}
