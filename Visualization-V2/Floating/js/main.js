@@ -1,3 +1,5 @@
+// todo: random一下每个曲线向下的speed - 有上有下
+
 let params = {
   MAX_PARTICLE_NUMBER: 10000,
   WORLD_WIDTH: 1000,
@@ -5,7 +7,7 @@ let params = {
   WORLD_DEPTH: 1000,
   Particles_in_scene: 0,
   //
-  Line_Num: 50,
+  Line_Num: 30,
   BendMagnitude: 30,
   BendLength: 0.005, // do not show // noise(pos.y * BendLength + frame * ChangeSpeed)
   ChangeSpeed: 0.005, // noise(pos.y * BendAmount + frame * ChangeSpeed)
@@ -14,6 +16,8 @@ let params = {
   FlowPosFreq: 0.005, // do not show // 
   FlowTimeFreq: 0.005,
   MoveSpd: 0.005,
+  lifeReductionMin: 0.005,
+  lifeReductionMax: 0.05,
 };
 
 let control = {
@@ -29,6 +33,9 @@ let Lines = [];
 
 let pointCloud;
 let particles = [];
+
+let space_int = 0, space_int_prev = -1;
+let update_lineNum = false;
 
 function setupThree() {
 
@@ -69,12 +76,14 @@ function setupThree() {
   ControlFolder.open();
   ControlFolder.add(control, "Weight", 0, 10, 0.1);
   ControlFolder.add(control, "Time", 0, 10, 0.1);
-  ControlFolder.add(control, "Space", 0, 10, 0.1);
+  ControlFolder.add(control, "Space", 0, 10, 0.1).onChange(update_space_int);
   ControlFolder.add(control, "Flow", 0, 10, 0.1);
 
 }
 
 function updateThree() {
+  controller();
+
   while (particles.length < params.MAX_PARTICLE_NUMBER) {
     let random_line = Math.floor(Math.random() * Lines.length);
     Lines[random_line].addNewParticle();
@@ -143,7 +152,6 @@ function getPoints(objects) {
 
 function set_Up_Lines() {
   if (LinePos.length > 0 || Lines.length > 0) {
-    console.log("Yes")
     LinePos = [];
     Lines = [];
   }
@@ -161,6 +169,19 @@ function set_Up_Lines() {
   }
 }
 
+function update_space_int() {
+  let calc_space_int = floor(control.Space / 3);
+  space_int_prev = space_int;
+  if (calc_space_int != space_int) {
+    space_int = calc_space_int;
+  }
+  if (space_int_prev != space_int) {
+    update_lineNum = true;
+  }
+  else {
+    update_lineNum = false;
+  }
+}
 
 // ============================
 class Particle {
@@ -173,7 +194,7 @@ class Particle {
     this.mass = this.scl.x * this.scl.y * this.scl.z;
 
     this.lifespan = 1.0;
-    this.lifeReduction = random(0.003, 0.05);
+    this.lifeReduction = random(params.lifeReductionMin, params.lifeReductionMax);
     this.isDone = false;
 
     this.moveScl = random();
@@ -257,7 +278,6 @@ class Particle {
     let force = new p5.Vector(noiseValue1, noiseValue2, noiseValue3);
     force.normalize();
     force.mult(params.MoveSpd);
-    // force.mult(this.moveScl);
     this.applyForce(force);
 
   }
@@ -267,6 +287,7 @@ class Particle {
 class Line {
   constructor() {
     this.pos = createVector();
+    this.moveDirection = random()
     return this;
   }
 
@@ -300,5 +321,35 @@ class Line {
       .setColor(noiseBrightness, noiseBrightness, noiseBrightness)
     particles.push(particle);
 
+  }
+}
+
+
+
+
+function controller() {
+  // weight
+  params.BendMagnitude = map(control.Weight, 0, 10, 10, 100);
+
+  // time
+  params.MoveSpd = map(control.Time, 0, 10, 0.002, 0.02);
+
+  // Space
+  if (update_lineNum) {
+    params.Line_Num = map(space_int, 0, 10 / 3, 10, 40);
+    set_Up_Lines();
+    update_lineNum = false;
+  }
+
+  // flow
+  if (control.Flow <= 5) {
+    params.breathFreq = map(control.Flow, 0, 5, 0.01, 0.03);
+    params.lifeReductionMin = map(control.Flow, 0, 5, 0.004, 0.006);
+    params.lifeReductionMax = map(control.Flow, 0, 5, 0.01, 0.02);
+  }
+  else {
+    params.breathFreq = map(control.Flow, 5, 10, 0.03, 0.05);
+    params.lifeReductionMin = map(control.Flow, 5, 10, 0.006, 0.01);
+    params.lifeReductionMax = map(control.Flow, 5, 10, 0.02, 0.05);
   }
 }

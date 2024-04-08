@@ -1,3 +1,6 @@
+// how can i change particle color to black? 
+// search // *** to see where I tryed to edit the color
+
 let params = {
   particleNum: 0,
   MAX_PARTICLE_NUMBER: 2000,
@@ -39,11 +42,28 @@ let params = {
   phase2_stage2Time: 500, // wait until spread
   phase2_stage3Time: 300,
   //phase 3
+  phase3_particleNumber: 5000, // same with phase2_particleNumber
   phase3_particleVel: 0.05,
-  phase3_lifeReductionMin: 0.001,
+  phase3_lifeReductionMin: 0.003,
   phase3_lifeReductionMax: 0.01,
   phase3_stage1Time: 100,
   phase3_moveUpSpd: 0.01,
+  phase3_particleReductionSpd: 10,
+  // phase 4
+  phase4_particleNumber: 2000,
+  phase4_circle_r: 400,
+  phase4_circle_R: 1000,
+  phase4_circle_sd: 20, // small - concentrated
+  phase4_circle_rangeMin: 5,
+  phase4_circle_rangeMax: 30,
+  phase4_breathFreq: 0.02,
+  phase4_breathAmp: 0.05,
+  //
+  phase5_angleNoise: 0.001,
+  phase5_repulseSpdMin: 0.00000001,
+  phase5_repulseSpdMax: 0.00005,
+  phase5_lifeReductionMin: 0.005,
+  phase5_lifeReductionMax: 0.01,
 };
 
 
@@ -75,11 +95,15 @@ let circleThreshold = 0;
 let pause = true;
 let phase1Finish = false;
 let phase2StartTime = 0;
-let phase2stage3; // start time
+let phase2stage3 = 0; // start time
 let phase2stage2Start = false;
 let phase2Finish = false;
+let phase3Finish = false;
 let phase3StartTime = 0;
 let phase3transmit = false;
+let phase4Finish = false;
+let phase5Finish = false;
+
 
 // random initialization
 let init_randomAngle;
@@ -91,7 +115,9 @@ function setupThree() {
     params.phase1_trace_moveSpd *= 10;
     params.phase1_shrinkSpeed *= 10;
     params.phase2_stage2Time = 50;
-    // params.phase2_spreadSpd = 0.01;
+    // params.phase3_particleReductionSpd = 50;
+    params.phase2_spreadSpd = 0.01;
+    params.phase3_stage1Time = 5;
   }
   centerPos = createVector(0, 0);
 
@@ -116,7 +142,6 @@ function setupThree() {
 }
 
 function updateThree() {
-  params.particleNum = particles.length;
   if (phase1Finish == false) {
     phase1_bagua_trace();
     phase1_updateParticles();
@@ -125,11 +150,22 @@ function updateThree() {
     phase2_Rotation();
     phase2_updateParticles();
   }
-  else {
+  else if (phase3Finish == false) {
     phase3_transmit();
     phase3_updateParticles();
   }
-  // then update the points
+  else if (phase4Finish == false) {
+    phase4_generateParticles();
+    phase4_updateParticles();
+  }
+  else {
+    phase5_updateParticles_disappear();
+  }
+
+  params.particleNum = particles.length; // update GUI
+
+
+  // update the points' info
   let positionArray = pointCloud.geometry.attributes.position.array;
   let colorArray = pointCloud.geometry.attributes.color.array;
   for (let i = 0; i < particles.length; i++) {
@@ -140,11 +176,11 @@ function updateThree() {
     positionArray[ptIndex + 1] = p.pos.y;
     positionArray[ptIndex + 2] = p.pos.z;
     //color
-    colorArray[ptIndex + 0] = 0;
-    colorArray[ptIndex + 1] = 0;
-    colorArray[ptIndex + 2] = 0;
+    colorArray[ptIndex + 0] = 1.0 - p.lifespan; // ***
+    colorArray[ptIndex + 1] = 1.0 - p.lifespan; // ***
+    colorArray[ptIndex + 2] = 1.0 - p.lifespan; // ***
   }
-  pointCloud.geometry.setDrawRange(0, particles.length); // ***
+  pointCloud.geometry.setDrawRange(0, particles.length);
   pointCloud.geometry.attributes.position.needsUpdate = true;
   pointCloud.geometry.attributes.color.needsUpdate = true;
 
@@ -158,7 +194,7 @@ function getPoints(objects) {
 
   for (let obj of objects) {
     vertices.push(obj.pos.x, obj.pos.y, obj.pos.z);
-    colors.push(0, 0, 0);
+    colors.push(0, 0, 0); // ***
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -167,12 +203,12 @@ function getPoints(objects) {
   geometry.setDrawRange(0, drawCount);
   const texture = new THREE.TextureLoader().load('assets/particle_texture.jpg');
   const material = new THREE.PointsMaterial({
-    color: 0x000000,
+    color: 0x000000, // ***
     vertexColors: true,
     size: 3,
     sizeAttenuation: true, // default
-    opacity: 0.9,
-    transparent: true,
+    // opacity: 1,
+    // transparent: true,
     depthTest: false,
     blending: THREE.AdditiveBlending,
     map: texture
@@ -299,6 +335,7 @@ function phase1_updateParticles() {
     p.move();
     p.rotate();
     p.age();
+    p.phase5_age();
     if (p.isDone) {
       particles.splice(i, 1);
       i--;
@@ -407,7 +444,7 @@ function phase2_updateParticles() {
     }
     if (params.phase2_spreadRad >= (params.BigCircleRad * 2 - 20)) {
       p.check_dist_slice(params.phase2_spreadRad);
-      if (!phase2stage3) {
+      if (!phase2stage3 > 0) {
         phase2stage3 = frame;
         phase2stage2Start = true;
       }
@@ -427,11 +464,11 @@ function phase2_updateParticles() {
 let phase3Rad = params.BigCircleRad;
 
 function phase3_transmit() {
-  phase3_generatePar_stage1();
+  phase3_generateParticles();
 }
 
-function phase3_generatePar_stage1() {
-  while (particles.length < params.phase2_particleNumber) {
+function phase3_generateParticles() {
+  while (particles.length < params.phase3_particleNumber) {
     let angle = random(TWO_PI);
     let x = mCos(angle) * phase3Rad * 2;
     let y = mSin(angle) * phase3Rad * 2;
@@ -443,12 +480,18 @@ function phase3_generatePar_stage1() {
   }
   if (frame - phase3StartTime > params.phase3_stage1Time) {
     phase3transmit = true;
+
   }
 }
 
 function phase3_updateParticles() {
-  if (phase3transmit) {
-    params.phase2_particleNumber -= 10;
+  if (phase3transmit && params.phase3_particleNumber > params.phase4_particleNumber) {
+    params.phase3_particleNumber -= params.phase3_particleReductionSpd;
+  }
+  else {
+    phase3transmit = false;
+    phase3Finish = true;
+    // phase4Start = true;
   }
   for (let i = 0; i < particles.length; i++) {
     let p = particles[i];
@@ -468,6 +511,55 @@ function phase3_updateParticles() {
   }
 }
 
+
+// ====================== phase 4 ==========================
+
+function phase4_generateParticles() {
+  while (particles.length < params.phase4_particleNumber) {
+    p = new BreathParticle()
+      .set_breathCen(0, 0, 0)
+      .setLifeReduction(params.phase5_lifeReductionMin, params.phase4_lifeReductionMax)
+      .set_breathPos(params.phase4_circle_r, params.phase4_circle_R, params.phase4_circle_sd)
+      .set_breathFreq(params.phase4_breathFreq)
+      .set_breathAmp(params.phase4_breathAmp)
+      .set_breathMoveRange(params.phase4_circle_rangeMin, params.phase4_circle_rangeMax);
+    particles.push(p);
+  }
+}
+
+
+function phase4_updateParticles() {
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    p.breath();
+    p.age();
+    p.flow(5);
+    p.move();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
+  }
+
+}
+// ====================== phase 5 ==========================
+
+function phase5_updateParticles_disappear() {
+  // let par1 = particles[0]
+  // console.log(par1.vel.x, par1.vel.y, par1.vel.z);
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    p.flow();
+    p.move();
+    p.age();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
+    p.phase5_age();
+    p.repulse_from(0, 0, 0);
+  }
+}
 
 // ======================= class ===========================
 class Particle {
@@ -497,14 +589,6 @@ class Particle {
   }
   setLifeReduction(min, max) {
     this.lifeReduction = random(min, max);
-    return this;
-  }
-  setRotationAngle(x, y, z) {
-    this.rot = createVector(x, y, z);
-    return this;
-  }
-  setRotationVelocity(x, y, z) {
-    this.rotVel = createVector(x, y, z);
     return this;
   }
   setScale(w, h = w, d = w) {
@@ -558,7 +642,7 @@ class Particle {
     }
     this.applyForce(force);
   }
-  flow(spd) {
+  flow(spd = 1) {
     let xFreq = this.pos.x * 0.05 + frame * 0.005;
     let yFreq = this.pos.y * 0.05 + frame * 0.005;
     let noiseValue = map(noise(xFreq, yFreq), 0.0, 1.0, -1.0, 1.0);
@@ -597,7 +681,91 @@ class Particle {
       this.isDone = true;
     }
   }
+  set_breathCen() { }
+  set_breathPos() { }
+  set_breathFreq() { }
+  set_breathAmp() { }
+  breath() { }
+  phase5_age() { }
+  repulse_from() { }
 }
+
+
+class BreathParticle extends Particle {
+  constructor() {
+    super();
+    this.outer = 0; //点所在的位置半径相对于大圆的位置
+    this.moveRange = 0;
+    this.breathCenter = createVector(0, 0, 0);
+    this.breathFrequency = 1;
+    this.breathAmplitude = 1;
+  }
+
+  set_breathCen(x, y, z) {
+    this.breathCenter = createVector(x, y, z);
+    return this;
+  }
+
+  set_breathPos(r, R, sd) { // also set this.outer & this.angle
+    let rCircle = r;
+    let RCircle = R;
+    this.angle = radians(random(360));
+    this.outer = abs(randomGaussian(0, sd));
+    if (this.outer > RCircle - rCircle) {
+      this.outer = RCircle - rCircle;
+    }
+    let rad = rCircle + this.outer;
+    let xPos = this.breathCenter.x + mSin(this.angle) * rad;
+    let yPos = this.breathCenter.y + mCos(this.angle) * rad;
+    this.pos.set(xPos, yPos, 0);
+    return this;
+  }
+
+  set_breathMoveRange(min, max) {
+    this.moveRange = map(this.outer, 0, 3 * params.phase4_circle_sd, min, max);
+    return this;
+  }
+
+  set_breathFreq(freq) {
+    this.breathFrequency = freq;
+    return this;
+  }
+
+  set_breathAmp(amp) {
+    this.breathAmplitude = amp;
+    return this;
+  }
+  age() {
+    // overwrite, not aging
+  }
+  phase5_age() {
+    this.lifespan -= this.lifeReduction;
+    if (this.lifespan <= 0) {
+      this.lifespan = 0;
+      this.isDone = true;
+    }
+  }
+
+  breath() {
+    let moveDist = mCos(frame * this.breathFrequency) * this.moveRange + this.moveRange;
+    let updatingR = params.phase4_circle_r + moveDist;
+    let xPos = this.breathCenter.x + mSin(this.angle) * updatingR;
+    let yPos = this.breathCenter.y + mCos(this.angle) * updatingR;
+    this.pos.set(xPos, yPos, 0);
+  }
+
+
+  repulse_from(x, y, z) {
+    let target = new p5.Vector(x, y, z);
+    let force = p5.Vector.sub(this.pos, target);
+    let forceMag = noise(this.angle * params.phase5_angleNoise);
+    let mag = map(forceMag, 0, 1, params.phase5_repulseSpdMin, params.phase5_repulseSpdMax)
+    force.mult(mag);
+    force.mult(0.0001);
+    this.applyForce(force);
+  }
+}
+
 
 
 function setupFastSinCos() {
@@ -628,3 +796,75 @@ document.addEventListener('click', function () {
   console.log("mouse is clicked");
 });
 
+document.addEventListener('keydown', onKeyDown);
+function onKeyDown(event) {
+  switch (event.key) {
+    case '1':
+      phase1Finish = false;
+      phase2Finish = false;
+      phase3Finish = false;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 1");
+      break;
+    case '2':
+      phase1Finish = true;
+      phase2Finish = false;
+      phase3Finish = false;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 2");
+      break;
+    case '3':
+      phase1Finish = true;
+      phase2Finish = true;
+      phase3Finish = false;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 3");
+      break;
+    case '4':
+      phase1Finish = true;
+      phase2Finish = true;
+      phase3Finish = true;
+      phase4Finish = false;
+      phase5Finish = false;
+      console.log("keydown 4");
+      break;
+    case '5':
+      phase1Finish = true;
+      phase2Finish = true;
+      phase3Finish = true;
+      phase4Finish = true;
+      phase5Finish = false;
+      console.log("keydown 5");
+      break;
+    case ' ':
+      phase1Finish = false;
+      phase2Finish = false;
+      phase3Finish = false;
+      phase4Finish = false;
+      phase5Finish = false;
+      params.phase3_particleNumber = params.phase2_particleNumber; // refresh phase3_particleNumber
+      init_randomAngle = radians(random(360));
+      centerPos = createVector(0, 0);
+      smallCircleShrink = false;
+      SmallCircleRad = params.phase1_breathCircle_Rad;
+      breathingAmp = params.phase1_breathCircle_Amp;
+      // trace
+      trajAngle = 0;
+      traceAdjAngle = 0;
+      rotationSpeed = 0;
+      spread = false;
+      circleThreshold = 0;
+      // whole process
+      pause = true;
+      phase2StartTime = 0;
+      phase2stage3 = 0;
+      phase2stage2Start = false;
+      phase3StartTime = 0;
+      phase3transmit = false;
+      console.log("Space Pressed - restart");
+      break;
+  }
+}

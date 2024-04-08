@@ -1,6 +1,6 @@
 // interaction process:
 // phase 1:
-//   small circles leading audiance to walk in a YinYang shape
+//   small circles leading audience to walk in a YinYang shape
 // phase 2: 
 //   the YinYang rotate and spread into a circle
 // phase 3:
@@ -13,7 +13,8 @@
 
 // ------------------------ TODO --------------------
 // why phase 5's vel is set automatically?????????
-// restart sometimes not working
+// restart sometimes not working well (?)
+// restart -- 不要用space bar，自己过度（phase 5 的particles消失之后）
 
 let params = {
   particleNum: 0,

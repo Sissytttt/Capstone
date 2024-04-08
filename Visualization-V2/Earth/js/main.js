@@ -345,6 +345,7 @@ function controller() {
   if (control.Weight <= 5) {
     params.moveRangeMin = map(control.Weight, 0, 5, 50, 100);
     params.moveRangeMax = map(control.Weight, 0, 5, 200, 400);
+    params.moveThreshold = map(control.Weight, 0, 5, 0.6, 0.5); // need test
   }
   else {
     params.moveRangeMin = map(control.Weight, 5, 10, 300, 900);
