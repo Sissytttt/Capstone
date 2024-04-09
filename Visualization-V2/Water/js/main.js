@@ -7,7 +7,7 @@ let params = {
   WORLD_DEPTH: 1000,
   Particles_in_scene: 0,
   //
-  Line_Num: 30,
+  Line_Num: 10,
   BendMagnitude: 30,
   BendLength: 0.005, // do not show // noise(pos.y * BendLength + frame * ChangeSpeed)
   ChangeSpeed: 0.005, // noise(pos.y * BendAmount + frame * ChangeSpeed)
@@ -43,7 +43,7 @@ function setupThree() {
 
   for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
     let random_line = Math.floor(Math.random() * Lines.length);
-    Lines[random_line].addNewParticle();
+    Lines[random_line].add_NewParticle();
   }
 
   // Points
@@ -86,7 +86,7 @@ function updateThree() {
 
   while (particles.length < params.MAX_PARTICLE_NUMBER) {
     let random_line = Math.floor(Math.random() * Lines.length);
-    Lines[random_line].addNewParticle();
+    Lines[random_line].add_NewParticle();
   }
 
   // update the particles
@@ -94,7 +94,6 @@ function updateThree() {
     let p = particles[i];
     p.flow();
     p.move();
-    p.adjustVelocity(-0.005);
     p.age();
     if (p.isDone) {
       particles.splice(i, 1);
@@ -164,7 +163,9 @@ function set_Up_Lines() {
   }
 
   for (let i = 0; i < params.Line_Num; i++) {
-    let line = new Line().setPos(...LinePos[i]);
+    let line = new Line()
+      .set_pos(...LinePos[i])
+      .set_spd((random() < 0.5 ? 1 : -1) * params.ChangeSpeed * random(-0.7, 1.3));
     Lines.push(line);
   }
 }
@@ -207,21 +208,21 @@ class Particle {
     particles.push(this);
   }
 
-  setPos(x, y, z) {
+  set_pos(x, y, z) {
     this.pos = createVector(x, y, z);
     return this;
   }
-  setColor(r, g, b) {
+  set_color(r, g, b) {
     this.color.r = r;
     this.color.g = g;
     this.color.b = b;
     return this;
   }
-  setVel(x, y, z) {
+  set_vel(x, y, z) {
     this.vel = createVector(x, y, z);
     return this;
   }
-  setScl(w, h = w, d = w) {
+  set_scl(w, h = w, d = w) {
     const minScale = 0.01;
     if (w < minScale) w = minScale;
     if (h < minScale) h = minScale;
@@ -235,15 +236,7 @@ class Particle {
     this.pos.add(this.vel);
     this.acc.mult(0);
   }
-  adjustVelocity(amount) {
-    this.vel.mult(1 + amount);
-  }
-  rotate() {
-    this.rotVel.add(this.rotAcc);
-    this.rot.add(this.rotVel);
-    this.rotAcc.mult(0);
-  }
-  applyForce(f) {
+  apply_force(f) {
     let force = f.copy();
     force.div(this.mass);
     this.acc.add(force);
@@ -278,7 +271,7 @@ class Particle {
     let force = new p5.Vector(noiseValue1, noiseValue2, noiseValue3);
     force.normalize();
     force.mult(params.MoveSpd);
-    this.applyForce(force);
+    this.apply_force(force);
 
   }
 }
@@ -291,15 +284,20 @@ class Line {
     return this;
   }
 
-  setPos(x, y, z) {
+  set_pos(x, y, z) {
     this.pos = createVector(x, y, z);
     return this;
   }
 
-  addNewParticle() {
+  set_spd(spd) {
+    this.spd = spd;
+    return this;
+  }
+
+  add_NewParticle() {
     let p_posy = random(-params.WORLD_DEPTH / 2, params.WORLD_HEIGHT / 2);
     let xFreq = this.pos.x * params.BendDifference
-    let yFreq = p_posy * params.BendLength + frame * params.ChangeSpeed;
+    let yFreq = p_posy * params.BendLength + frame * this.spd;
     let noiseWave = map(noise(yFreq, xFreq), 0, 1, - params.BendMagnitude, params.BendMagnitude); // 弯曲的变换
     let noiseValue = noise(yFreq, this.pos.x)
     let noiseBrightness;
@@ -317,15 +315,12 @@ class Line {
     }
 
     let particle = new Particle()
-      .setPos(this.pos.x + noiseWave, p_posy, this.pos.z)
-      .setColor(noiseBrightness, noiseBrightness, noiseBrightness)
+      .set_pos(this.pos.x + noiseWave, p_posy, this.pos.z)
+      .set_color(noiseBrightness, noiseBrightness, noiseBrightness)
     particles.push(particle);
 
   }
 }
-
-
-
 
 function controller() {
   // weight
@@ -340,7 +335,12 @@ function controller() {
     set_Up_Lines();
     update_lineNum = false;
   }
-
+  if (control.Space <= 4) {
+    params.ChangeSpeed = map(space_int, 0, 5, 0.03, 0.01);
+  }
+  else {
+    params.ChangeSpeed = map(space_int, 5, 10, 0.002, 0.01);
+  }
   // flow
   if (control.Flow <= 5) {
     params.breathFreq = map(control.Flow, 0, 5, 0.01, 0.03);

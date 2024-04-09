@@ -435,13 +435,13 @@ function controller() {
     params.branchPossibility = map(control.Weight, 0, 5, 0.004, 0.0055);
     params.moveSpdMin = map(control.Weight, 0, 5, 0.01, 1);
     params.moveSpdMax = map(control.Weight, 0, 5, 0.3, 2);
-    params.thickness = floor(map(control.Weight, 0, 10, 1, 4)) * noise(frame * 0.05);
+    // params.thickness = floor(map(control.Weight, 0, 10, 1, 4)) * noise(frame * 0.05);
   }
   else {
     params.branchPossibility = map(control.Weight, 5, 10, 0.0055, 0.015);
     params.moveSpdMin = map(control.Weight, 5, 10, 0.5, 5);
     params.moveSpdMax = map(control.Weight, 5, 10, 1, 7);
-    params.thickness = floor(map(control.Weight, 0, 10, 1, 4)) * noise(frame * 0.05);
+    // params.thickness = floor(map(control.Weight, 0, 10, 1, 4)) * noise(frame * 0.05);
   }
 
   // time 
@@ -464,8 +464,8 @@ function controller() {
   }
   else {
     params.anglePossibility = map(control.Space, 5, 10, 0.05, 0.2);
-    params.BranchAngleRange = map(control.Space, 0, 5, 60, 80);
-    params.BranchAngleRange = map(control.Space, 5, 10, 35, 55);
+    params.BranchAngleRange = map(control.Space, 0, 5, 60, 120);
+    params.angleRange = map(control.Space, 5, 10, 35, 55);
   }
 
   // flow

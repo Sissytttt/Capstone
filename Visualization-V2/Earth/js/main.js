@@ -359,7 +359,7 @@ function controller() {
     // params.WaveRadFreq = map(control.Time, 0, 5, 0.002, 0.004);
   }
   else {
-    params.WaveFrameFreq = map(control.Time, 5, 10, 0.004, 0.01);
+    params.WaveFrameFreq = map(control.Time, 5, 10, 0.004, 0.02);
     // params.WaveRadFreq = map(control.Time, 5, 10, 0.004, 0.01);
   }
 
