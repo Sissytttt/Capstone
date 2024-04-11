@@ -100,7 +100,7 @@ function updateThree() {
       for (let i = 0; i < params.particleNum; i++) {
         let adj_x = random(-params.thickness, params.thickness);
         let adj_y = random(-params.thickness, params.thickness);
-        let p = new Particle()
+        let p = new ParticleBasic()
           .set_pos(thing.pos.x + adjX + adj_x, thing.pos.y + adjY + adj_y)
           .set_lifespan(params.particleLifeSpan)
           // .set_lifespan(0.1)
@@ -323,9 +323,6 @@ class Particle {
     this.vel.add(this.acc);
     this.pos.add(this.vel);
     this.acc.mult(0);
-  }
-  adjustVelocity(amount) {
-    this.vel.mult(1 + amount);
   }
   applyForce(f) {
     let force = f.copy();

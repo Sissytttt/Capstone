@@ -241,16 +241,6 @@ class Particle {
     force.div(this.mass);
     this.acc.add(force);
   }
-  reappear() {
-    if (this.pos.z > params.WORLD_DEPTH / 2) {
-      this.pos.z = -params.WORLD_DEPTH / 2;
-    }
-  }
-  disappear() {
-    if (this.pos.z > params.WORLD_DEPTH / 2) {
-      this.isDone = true;
-    }
-  }
   age() {
     this.lifespan -= this.lifeReduction;
     if (this.lifespan <= 0) {
@@ -314,7 +304,7 @@ class Line {
       noiseBrightness = map(noiseValue, 0.7, 1, 1, 255);
     }
 
-    let particle = new Particle()
+    let particle = new ParticleBasic()
       .set_pos(this.pos.x + noiseWave, p_posy, this.pos.z)
       .set_color(noiseBrightness, noiseBrightness, noiseBrightness)
     particles.push(particle);

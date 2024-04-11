@@ -1,3 +1,5 @@
+// set_life_reduction(val)???????
+
 let params = {
   PARTICLE_NUMBER: 6000,
   particleNum: 0,
@@ -151,7 +153,7 @@ function generate_new_particle() {
   let lifeReduction = map(noise(noiseFreq), 0, 1, 0.007, 0.001);
   let moveUp = map(noise(noiseFreq), 0, 1, 0, 1);
   if (random(1) < threshold) {
-    let p = new Particle()
+    let p = new ParticleBasic()
       .setPos(x, 0 - params.WORLD_HEIGHT / 2, 0)
       .set_life_reduction(lifeReduction)
       .set_move_up(moveUp);
@@ -170,7 +172,7 @@ function add_upper_points() {
   let lifeReduction = map(noiseValue, 0, 1, 0.007, 0.001);
   let moveUp = map(noiseValue, 0, 1, 0, 1);
   if ((noiseValue > params.areaSize)) {
-    let p = new Particle()
+    let p = new ParticleBasic()
       .setPos(x, y, 0)
       .set_life_reduction(lifeReduction)
       .set_move_up(moveUp);
@@ -203,7 +205,7 @@ class Particle {
     this.pos = createVector(x, y, z);
     return this;
   }
-  set_life_reduction(val) {
+  set_life_reduction(val) { // ??????????????????????why the only number
     this.lifeReduction = val;
     return this;
   }

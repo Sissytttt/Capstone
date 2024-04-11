@@ -279,16 +279,6 @@ class Particle {
     force.div(this.mass);
     this.acc.add(force);
   }
-  reappear() {
-    if (this.pos.z > params.WORLD_DEPTH / 2) {
-      this.pos.z = -params.WORLD_DEPTH / 2;
-    }
-  }
-  disappear() {
-    if (this.pos.z > params.WORLD_DEPTH / 2) {
-      this.isDone = true;
-    }
-  }
   age() {
     this.lifespan -= this.lifeReduction;
     if (this.lifespan <= 0) {
