@@ -1,6 +1,6 @@
 // todo: random一下每个曲线向下的speed - 有上有下
 
-let params = {
+let water = {
   MAX_PARTICLE_NUMBER: 10000,
   WORLD_WIDTH: 1000,
   WORLD_HEIGHT: 300,
@@ -12,6 +12,7 @@ let params = {
   BendLength: 0.005, // do not show // noise(pos.y * BendLength + frame * ChangeSpeed)
   ChangeSpeed: 0.005, // noise(pos.y * BendAmount + frame * ChangeSpeed)
   BendDifference: 0.005, // do not show // noise(pos.x * BendDifference)
+  Brightness: 1,
   // 
   FlowPosFreq: 0.005, // do not show // 
   FlowTimeFreq: 0.005,
@@ -39,9 +40,9 @@ let update_lineNum = false;
 
 function setupThree() {
 
-  set_Up_Lines();
+  setup_water();
 
-  for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
+  for (let i = 0; i < water.MAX_PARTICLE_NUMBER; i++) {
     let random_line = Math.floor(Math.random() * Lines.length);
     Lines[random_line].add_NewParticle();
   }
@@ -53,24 +54,24 @@ function setupThree() {
 
   // gui
   let folderBasic = gui.addFolder("WORLD BASIC");
-  folderBasic.add(params, "MAX_PARTICLE_NUMBER", 0, 20000).step(1);
-  folderBasic.add(params, "WORLD_WIDTH", 0, 2000, 10).onChange(set_Up_Lines);
-  folderBasic.add(params, "WORLD_HEIGHT", 0, 2000, 10).onChange(set_Up_Lines);
-  folderBasic.add(params, "WORLD_DEPTH", 0, 2000, 10).onChange(set_Up_Lines);
-  params.Particles_in_scene = particles.length;
-  folderBasic.add(params, "Particles_in_scene").listen();
+  folderBasic.add(water, "MAX_PARTICLE_NUMBER", 0, 20000).step(1);
+  folderBasic.add(water, "WORLD_WIDTH", 0, 2000, 10).onChange(setup_water);
+  folderBasic.add(water, "WORLD_HEIGHT", 0, 2000, 10).onChange(setup_water);
+  folderBasic.add(water, "WORLD_DEPTH", 0, 2000, 10).onChange(setup_water);
+  water.Particles_in_scene = particles.length;
+  folderBasic.add(water, "Particles_in_scene").listen();
 
   let LineFolder = gui.addFolder("Line");
-  LineFolder.add(params, "Line_Num", 1, 100, 1).onChange(set_Up_Lines);
-  LineFolder.add(params, "BendMagnitude", 0, 80, 1);
-  LineFolder.add(params, "BendLength", 0, 1, 0.001);
-  LineFolder.add(params, "ChangeSpeed", 0, 1, 0.001);
-  LineFolder.add(params, "BendDifference", 0, 1, 0.001);
+  LineFolder.add(water, "Line_Num", 1, 100, 1).onChange(setup_water);
+  LineFolder.add(water, "BendMagnitude", 0, 80, 1);
+  LineFolder.add(water, "BendLength", 0, 1, 0.001);
+  LineFolder.add(water, "ChangeSpeed", 0, 1, 0.001);
+  LineFolder.add(water, "BendDifference", 0, 1, 0.001);
 
   let ParticleFolder = gui.addFolder("Particles");
-  ParticleFolder.add(params, "FlowPosFreq", 0, 0.5, 0.0001);
-  ParticleFolder.add(params, "FlowTimeFreq", 0, 0.5, 0.0001);
-  ParticleFolder.add(params, "MoveSpd", 0, 0.5, 0.0001);
+  ParticleFolder.add(water, "FlowPosFreq", 0, 0.5, 0.0001);
+  ParticleFolder.add(water, "FlowTimeFreq", 0, 0.5, 0.0001);
+  ParticleFolder.add(water, "MoveSpd", 0, 0.5, 0.0001);
 
   let ControlFolder = gui.addFolder("CONTROL");
   ControlFolder.open();
@@ -84,7 +85,7 @@ function setupThree() {
 function updateThree() {
   controller();
 
-  while (particles.length < params.MAX_PARTICLE_NUMBER) {
+  while (particles.length < water.MAX_PARTICLE_NUMBER) {
     let random_line = Math.floor(Math.random() * Lines.length);
     Lines[random_line].add_NewParticle();
   }
@@ -119,7 +120,7 @@ function updateThree() {
   pointCloud.geometry.attributes.color.needsUpdate = true;
 
   // update GUI
-  params.Particles_in_scene = particles.length;
+  water.Particles_in_scene = particles.length;
 }
 
 function getPoints(objects) {
@@ -149,23 +150,23 @@ function getPoints(objects) {
   return points;
 }
 
-function set_Up_Lines() {
+function setup_water() {
   if (LinePos.length > 0 || Lines.length > 0) {
     LinePos = [];
     Lines = [];
   }
 
-  for (let i = 0; i < params.Line_Num; i++) {
-    posX = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
+  for (let i = 0; i < water.Line_Num; i++) {
+    posX = random(-water.WORLD_WIDTH / 2, water.WORLD_WIDTH / 2);
     posY = 0;
-    posZ = random(-params.WORLD_DEPTH / 2, params.WORLD_DEPTH / 2);
+    posZ = random(-water.WORLD_DEPTH / 2, water.WORLD_DEPTH / 2);
     LinePos.push([posX, posY, posZ]);
   }
 
-  for (let i = 0; i < params.Line_Num; i++) {
+  for (let i = 0; i < water.Line_Num; i++) {
     let line = new Line()
       .set_pos(...LinePos[i])
-      .set_spd((random() < 0.5 ? 1 : -1) * params.ChangeSpeed * random(-0.7, 1.3));
+      .set_spd((random() < 0.5 ? 1 : -1) * water.ChangeSpeed * random(-0.7, 1.3));
     Lines.push(line);
   }
 }
@@ -195,7 +196,7 @@ class Particle {
     this.mass = this.scl.x * this.scl.y * this.scl.z;
 
     this.lifespan = 1.0;
-    this.lifeReduction = random(params.lifeReductionMin, params.lifeReductionMax);
+    this.lifeReduction = random(water.lifeReductionMin, water.lifeReductionMax);
     this.isDone = false;
 
     this.moveScl = random();
@@ -250,8 +251,8 @@ class Particle {
   }
 
   flow() {
-    let posFreq = params.FlowPosFreq;
-    let timeFreq = params.FlowTimeFreq;
+    let posFreq = water.FlowPosFreq;
+    let timeFreq = water.FlowTimeFreq;
     let xFreq = this.pos.x * posFreq + frame * timeFreq;
     let yFreq = this.pos.y * posFreq + frame * timeFreq;
     let zFreq = this.pos.z * posFreq + frame * timeFreq;
@@ -260,7 +261,7 @@ class Particle {
     let noiseValue3 = map(noise(xFreq + 2000, yFreq + 2000, zFreq + 2000), 0.0, 1.0, -1.0, 1.0);
     let force = new p5.Vector(noiseValue1, noiseValue2, noiseValue3);
     force.normalize();
-    force.mult(params.MoveSpd);
+    force.mult(water.MoveSpd);
     this.apply_force(force);
 
   }
@@ -285,10 +286,10 @@ class Line {
   }
 
   add_NewParticle() {
-    let p_posy = random(-params.WORLD_DEPTH / 2, params.WORLD_HEIGHT / 2);
-    let xFreq = this.pos.x * params.BendDifference
-    let yFreq = p_posy * params.BendLength + frame * this.spd;
-    let noiseWave = map(noise(yFreq, xFreq), 0, 1, - params.BendMagnitude, params.BendMagnitude); // 弯曲的变换
+    let p_posy = random(-water.WORLD_DEPTH / 2, water.WORLD_HEIGHT / 2);
+    let xFreq = this.pos.x * water.BendDifference
+    let yFreq = p_posy * water.BendLength + frame * this.spd;
+    let noiseWave = map(noise(yFreq, xFreq), 0, 1, - water.BendMagnitude, water.BendMagnitude); // 弯曲的变换
     let noiseValue = noise(yFreq, this.pos.x)
     let noiseBrightness;
     if (noiseValue < 0.2) {
@@ -298,13 +299,13 @@ class Line {
       noiseBrightness = map(noiseValue, 0.2, 0.5, 0, 0.05);
     }
     else if (noiseValue < 0.7) {
-      noiseBrightness = map(noiseValue, 0.5, 0.7, 0.05, 2);
+      noiseBrightness = map(noiseValue, 0.5, 0.7, 0.05, 2) * water.Brightness;
     }
     else if (noiseValue < 1) {
-      noiseBrightness = map(noiseValue, 0.7, 1, 1, 255);
+      noiseBrightness = map(noiseValue, 0.7, 1, 1, 255) * water.Brightness;
     }
 
-    let particle = new ParticleBasic()
+    let particle = new Particle()
       .set_pos(this.pos.x + noiseWave, p_posy, this.pos.z)
       .set_color(noiseBrightness, noiseBrightness, noiseBrightness)
     particles.push(particle);
@@ -314,32 +315,36 @@ class Line {
 
 function controller() {
   // weight
-  params.BendMagnitude = map(control.Weight, 0, 10, 10, 100);
+  water.BendMagnitude = map(control.Weight, 0, 10, 10, 100);
+  water.Brightness = map(control.Weight, 0, 10, 0.01, 1);
 
   // time
-  params.MoveSpd = map(control.Time, 0, 10, 0.002, 0.02);
+  if (control.Time <= 5) {
+    water.MoveSpd = map(control.Time, 0, 5, 0.0001, 0.008);
+  }
+  else {
+    water.MoveSpd = map(control.Time, 5, 10, 0.008, 0.02);
+  }
 
   // Space
   if (update_lineNum) {
-    params.Line_Num = map(space_int, 0, 10 / 3, 10, 40);
-    set_Up_Lines();
+    water.Line_Num = map(space_int, 0, 10 / 3, 10, 40);
+    setup_water();
     update_lineNum = false;
   }
   if (control.Space <= 4) {
-    params.ChangeSpeed = map(space_int, 0, 5, 0.03, 0.01);
+    water.ChangeSpeed = map(space_int, 0, 5, 0.03, 0.01);
   }
   else {
-    params.ChangeSpeed = map(space_int, 5, 10, 0.002, 0.01);
+    water.ChangeSpeed = map(space_int, 5, 10, 0.002, 0.01);
   }
   // flow
   if (control.Flow <= 5) {
-    params.breathFreq = map(control.Flow, 0, 5, 0.01, 0.03);
-    params.lifeReductionMin = map(control.Flow, 0, 5, 0.004, 0.006);
-    params.lifeReductionMax = map(control.Flow, 0, 5, 0.01, 0.02);
+    water.lifeReductionMin = map(control.Flow, 0, 5, 0.004, 0.006);
+    water.lifeReductionMax = map(control.Flow, 0, 5, 0.01, 0.02);
   }
   else {
-    params.breathFreq = map(control.Flow, 5, 10, 0.03, 0.05);
-    params.lifeReductionMin = map(control.Flow, 5, 10, 0.006, 0.01);
-    params.lifeReductionMax = map(control.Flow, 5, 10, 0.02, 0.05);
+    water.lifeReductionMin = map(control.Flow, 5, 10, 0.006, 0.01);
+    water.lifeReductionMax = map(control.Flow, 5, 10, 0.02, 0.05);
   }
 }

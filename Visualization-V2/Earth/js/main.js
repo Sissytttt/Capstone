@@ -18,8 +18,9 @@ let params = {
   moveThreshold: 0.5, // 0~1, >threshold的比例是会有起伏的比例
   WaveFrameFreq: 0.004,
   WaveRadFreq: 0.01,
+  WaveAngleFreq: 0.005, // don't know what this controls
   // 
-  FlowPosFreq: 0.005,
+  FlowPosFreq: 0.00001,
   FlowTimeFreq: 0.005,
   MoveSpd: 0.001,
   lifeReductionMin: 0.005,
@@ -178,8 +179,7 @@ class Circle {
     return this;
   }
   update_pos() {
-    let freq = 0.005;
-    let noiseVal = noise(this.pos.x * freq, this.pos.z * freq, frame * freq);
+    let noiseVal = noise(this.pos.x * params.WaveAngleFreq, this.pos.z * params.WaveAngleFreq, frame * params.WaveAngleFreq);
     let yPos = map(noiseVal, 0, 1, -150, 150)
     this.pos.y = yPos;
   }
@@ -346,11 +346,11 @@ function controller() {
   // time // 变换不连贯
   if (control.Time <= 5) {
     params.WaveFrameFreq = map(control.Time, 0, 5, 0.002, 0.004);
-    // params.WaveRadFreq = map(control.Time, 0, 5, 0.002, 0.004);
+    params.WaveRadFreq = map(control.Time, 0, 5, 0.0001, 0.01);
   }
   else {
     params.WaveFrameFreq = map(control.Time, 5, 10, 0.004, 0.02);
-    // params.WaveRadFreq = map(control.Time, 5, 10, 0.004, 0.01);
+    params.WaveRadFreq = map(control.Time, 5, 10, 0.01, 0.3);
   }
 
   // Space

@@ -266,20 +266,18 @@ class Particle {
 
 function controller() {
   // weight
-  if (control.Weight >= 5) {
-    // not fade
+  if (control.Weight < 4) {
     params.fade = false;
   }
-  else if (control.Weight >= 2.5) {
-    // change the lifeReductionMin & Max 小-大 map 大-小
+  else if (control.Weight >= 7) {
     params.fade = true;
-    params.lifeReductionMin = map(control.Weight, 3, 6, 0.001, 0.0008);
-    params.lifeReductionMax = map(control.Weight, 3, 6, 0.005, 0.003);
+    params.lifeReductionMin = map(control.Weight, 10, 7, 0.001, 0.0008);
+    params.lifeReductionMax = map(control.Weight, 10, 7, 0.005, 0.003);
   }
   else {
     params.fade = true;
-    params.lifeReductionMin = map(control.Weight, 0, 3, 0.0008, 0.0005);
-    params.lifeReductionMax = map(control.Weight, 0, 3, 0.02, 0.005);
+    params.lifeReductionMin = map(control.Weight, 7, 4, 0.0008, 0.0005);
+    params.lifeReductionMax = map(control.Weight, 7, 4, 0.02, 0.005);
   }
 
   // time
