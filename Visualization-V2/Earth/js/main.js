@@ -346,11 +346,11 @@ function controller() {
   // time // 变换不连贯
   if (control.Time <= 5) {
     params.WaveFrameFreq = map(control.Time, 0, 5, 0.002, 0.004);
-    params.WaveRadFreq = map(control.Time, 0, 5, 0.0001, 0.01);
+    params.WaveRadFreq = map(control.Time, 0, 5, 0.0001, 0.005);
   }
   else {
     params.WaveFrameFreq = map(control.Time, 5, 10, 0.004, 0.02);
-    params.WaveRadFreq = map(control.Time, 5, 10, 0.01, 0.3);
+    params.WaveRadFreq = map(control.Time, 5, 10, 0.005, 0.01);
   }
 
   // Space

@@ -134,7 +134,7 @@ function getPoints(objects) {
   const texture = new THREE.TextureLoader().load('assets/particle_texture.jpg');
   const material = new THREE.PointsMaterial({
     vertexColors: true,
-    size: random(1, 5),
+    size: random(1, 3),
     // sizeAttenuation: true,
 
     //opacity: 0.50,

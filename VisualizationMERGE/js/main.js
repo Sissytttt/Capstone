@@ -1,7 +1,7 @@
 let pointCloud;
 let particles = [];
 
-// let mode = "NONE";
+// need to wait canvasClean -> change the next mode
 let mode = "NONE";
 
 function setupThree() {
@@ -12,11 +12,39 @@ function setupThree() {
   pointCloud = getPoints(particles);
   scene.add(pointCloud);
 
-  GUI_for_Movement();
   display_particle_num();
   // GUI_for_water();
 
 }
+
+// setup
+document.addEventListener('keydown', onKeyDown);
+function onKeyDown(event) {
+  switch (event.key) {
+    case " ":
+      mode = "NONE";
+      break;
+    case "1":
+      remove_all_GUIs();
+      water_GUI_MOVEMENT();
+      mode = "WATER";
+      water_setup_lines();
+      break;
+    case "2":
+      remove_all_GUIs();
+      mountain_GUI_MOVEMENT();
+      mode = "MOUNTAIN";
+      mountain_setup_Ps();
+      break;
+    case "3":
+      mode = "EARTH";
+      break;
+    case "4":
+      mode = "THUNDER";
+      break;
+  }
+}
+
 
 
 function updateThree() {
@@ -30,7 +58,9 @@ function updateThree() {
       water_interaction_controller();
       break;
     case "MOUNTAIN":
-      //
+      mountain_generate_Ps();
+      mountain_update_Ps();
+      mountain_interaction_controller();
       break;
     case "EARTH":
       //
@@ -43,26 +73,3 @@ function updateThree() {
   update_GUI();
   update_points();
 }
-
-
-document.addEventListener('keydown', onKeyDown);
-function onKeyDown(event) {
-  switch (event.key) {
-    case " ":
-      mode = "NONE";
-      break;
-    case "1":
-      mode = "WATER";
-      setup_water_lines();
-      break;
-    case "2":
-      mode = "MOUNTAIN";
-      break;
-    case "3":
-      mode = "EARTH";
-      break;
-    case "4":
-      mode = "THUNDER";
-      break;
-  }
-} 

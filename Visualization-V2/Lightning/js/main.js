@@ -100,7 +100,7 @@ function updateThree() {
       for (let i = 0; i < params.particleNum; i++) {
         let adj_x = random(-params.thickness, params.thickness);
         let adj_y = random(-params.thickness, params.thickness);
-        let p = new ParticleBasic()
+        let p = new Particle()
           .set_pos(thing.pos.x + adjX + adj_x, thing.pos.y + adjY + adj_y)
           .set_lifespan(params.particleLifeSpan)
           // .set_lifespan(0.1)
