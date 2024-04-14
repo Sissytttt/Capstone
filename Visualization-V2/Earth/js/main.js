@@ -46,7 +46,7 @@ let sinCosResolution = 360 * 2;
 
 function setupThree() {
   setupFastSinCos();
-  set_Up_Circles();
+  earth_setup_circles();
   for (let i = 0; i < params.MAX_PARTICLE_NUMBER; i++) {
     let random_circle = Math.floor(Math.random() * Circles.length);
     Circles[random_circle].addParticles();
@@ -60,14 +60,14 @@ function setupThree() {
   // gui
   let folderBasic = gui.addFolder("WORLD BASIC");
   folderBasic.add(params, "MAX_PARTICLE_NUMBER", 0, 20000).step(1);
-  folderBasic.add(params, "WORLD_WIDTH", 0, 2000, 10).onChange(set_Up_Circles);
-  folderBasic.add(params, "WORLD_HEIGHT", 0, 2000, 10).onChange(set_Up_Circles);
-  folderBasic.add(params, "WORLD_DEPTH", 0, 2000, 10).onChange(set_Up_Circles);
+  folderBasic.add(params, "WORLD_WIDTH", 0, 2000, 10).onChange(earth_setup_circles);
+  folderBasic.add(params, "WORLD_HEIGHT", 0, 2000, 10).onChange(earth_setup_circles);
+  folderBasic.add(params, "WORLD_DEPTH", 0, 2000, 10).onChange(earth_setup_circles);
   params.Particles_in_scene = particles.length;
   folderBasic.add(params, "Particles_in_scene").listen();
 
   let CircleFolder = gui.addFolder("Circle");
-  CircleFolder.add(params, "Circle_Num", 1, 100, 1).onChange(set_Up_Circles);
+  CircleFolder.add(params, "Circle_Num", 1, 100, 1).onChange(earth_setup_circles);
 
   let ParticleFolder = gui.addFolder("Particles");
   ParticleFolder.add(params, "FlowPosFreq", 0, 0.5, 0.0001);
@@ -154,7 +154,7 @@ function getPoints(objects) {
   return points;
 }
 
-function set_Up_Circles() {
+function earth_setup_circles() {
   for (let i = 0; i < params.Circle_Num; i++) {
     let rAdj = abs(randomGaussian(0, params.gaussianSD));
     if (rAdj > params.sizeMax - params.sizeMin) {

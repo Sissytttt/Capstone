@@ -84,7 +84,6 @@ function mountain_interaction_controller() {
     else {
         mountain_params.WORLD_WIDTH = 1600;
     }
-
     // flow 
     // effect really not obvious *** because patterns are already formed.
     // flow value is small -- movement is fluent -- pattern is not obvious
@@ -102,25 +101,112 @@ function mountain_interaction_controller() {
 
 
 // ======================== EARTH ==========================
+function earth_interaction_controller() {
+    // weight
+    if (control.Weight <= 5) {
+        earth_params.moveRangeMin = map(control.Weight, 0, 5, 50, 100);
+        earth_params.moveRangeMax = map(control.Weight, 0, 5, 200, 400);
+        earth_params.moveThreshold = map(control.Weight, 0, 5, 0.6, 0.5); // need test
+    }
+    else {
+        earth_params.moveRangeMin = map(control.Weight, 5, 10, 300, 900);
+        earth_params.moveRangeMax = map(control.Weight, 5, 10, 500, 2000);
+        earth_params.moveThreshold = map(control.Weight, 5, 10, 0.5, 0.3);
+    }
 
+    // time // 变换不连贯
+    if (control.Time <= 5) {
+        earth_params.WaveFrameFreq = map(control.Time, 0, 5, 0.002, 0.004);
+        earth_params.WaveRadFreq = map(control.Time, 0, 5, 0.0001, 0.005);
+    }
+    else {
+        earth_params.WaveFrameFreq = map(control.Time, 5, 10, 0.004, 0.02);
+        earth_params.WaveRadFreq = map(control.Time, 5, 10, 0.005, 0.01);
+    }
+
+    // Space
+    if (control.Space <= 5) {
+        earth_params.breathAmplMin = map(control.Space, 0, 5, 10, 25);
+        earth_params.breathAmplMax = map(control.Space, 0, 5, 50, 100);
+    }
+    else {
+        earth_params.breathAmplMin = map(control.Space, 5, 10, 25, 40);
+        earth_params.breathAmplMax = map(control.Space, 5, 10, 100, 500);
+    }
+
+    // flow
+    if (control.Flow <= 5) {
+        earth_params.breathFreq = map(control.Flow, 0, 5, 0.01, 0.03);
+        earth_params.lifeReductionMin = map(control.Flow, 0, 5, 0.004, 0.006);
+        earth_params.lifeReductionMax = map(control.Flow, 0, 5, 0.01, 0.02);
+    }
+    else {
+        earth_params.breathFreq = map(control.Flow, 5, 10, 0.03, 0.05);
+        earth_params.lifeReductionMin = map(control.Flow, 5, 10, 0.006, 0.01);
+        earth_params.lifeReductionMax = map(control.Flow, 5, 10, 0.02, 0.05);
+    }
+}
 
 
 // ======================= THUNDER =========================
+function thunder_interaction_controller() {
+    // weight
+    if (control.Weight <= 5) {
+        thunder_params.branchPossibility = map(control.Weight, 0, 5, 0.004, 0.0055);
+        thunder_params.moveSpdMin = map(control.Weight, 0, 5, 0.1, 1);
+        thunder_params.moveSpdMax = map(control.Weight, 0, 5, 0.3, 2);
+    }
+    else {
+        thunder_params.branchPossibility = map(control.Weight, 5, 10, 0.0055, 0.015);
+        thunder_params.moveSpdMin = map(control.Weight, 5, 10, 1, 5);
+        thunder_params.moveSpdMax = map(control.Weight, 5, 10, 2, 7);
+    }
+    thunder_params.thickness = floor(map(control.Weight, 0, 10, 1, 10)) * noise(frame * 0.05);
 
+    // time 
+    if (control.Time <= 5) {
+        thunder_params.flowSpd = map(control.Time, 0, 5, 0.005, 0.01);
+        thunder_params.particleLifeSpan = map(control.Time, 0, 5, 1.0, 0.6);
+        thunder_params.flowTimeFreq = map(control.Time, 0, 5, 0.002, 0.005);
+    }
+    else {
+        thunder_params.flowSpd = map(control.Time, 5, 10, 0.01, 0.03);
+        thunder_params.particleLifeSpan = map(control.Time, 5, 10, 0.6, 0.3);
+        thunder_params.flowTimeFreq = map(control.Time, 5, 10, 0.005, 0.01);
+    }
 
+    // Space
+    if (control.Space <= 5) {
+        thunder_params.anglePossibility = map(control.Space, 0, 5, 0.01, 0.05);
+        thunder_params.BranchAngleRange = map(control.Space, 0, 5, 60, 80);
+        thunder_params.AngleRange = map(control.Space, 0, 5, 20, 35);
+    }
+    else {
+        thunder_params.anglePossibility = map(control.Space, 5, 10, 0.05, 0.2);
+        thunder_params.BranchAngleRange = map(control.Space, 0, 5, 60, 120);
+        thunder_params.AngleRange = map(control.Space, 5, 10, 35, 55);
+    }
 
+    // flow
+    if (control.Flow <= 5) {
+        thunder_params.flowPosFreq = map(control.Flow, 0, 5, 0.01, 0.06);
+    }
+    else {
+        thunder_params.flowPosFreq = map(control.Flow, 5, 10, 0.06, 0.2);
+    }
+}
 // ======================== FIRE ==========================
-
+function fire_interaction_controller() { }
 
 
 // ======================== LAKE ==========================
-
+function lake_interaction_controller() { }
 
 
 // ======================= HEAVEN =========================
-
+function heaven_interaction_controller() { }
 
 
 // ======================== WIND ==========================
-
+function wind_interaction_controller() { }
 

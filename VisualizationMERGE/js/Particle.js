@@ -225,15 +225,179 @@ class MountainParticle extends ParticleBasic {
 }
 
 
-/*
+
 
 // ======================== EARTH ==========================
 
+class EarthParticle extends ParticleBasic {
+    constructor() {
+        super();
+        this.angle = 0;
+        this.rad = 0;
+        this.moveRange = 0;
+        // particles.push(this);
+    }
+    set_angle(angle) {
+        this.angle = angle;
+        return this;
+    }
+    set_rad(rad) {
+        this.rad = rad;
+        return this;
+    }
+    set_moveRange(val) {
+        this.moveRange = val;
+        return this;
+    }
+    wave() {
+        let angleFreq = this.angle;
+        let radFreq = this.rad * earth_params.WaveRadFreq;
+        let frameFreq = frame * earth_params.WaveFrameFreq;
+        let noiseVal = noise(angleFreq, radFreq, frameFreq);
+        let yPos = 0;
+        if (noiseVal > earth_params.moveThreshold) {
+            yPos = map(noiseVal, earth_params.moveThreshold, 1, 0, this.moveRange);
+        }
+        this.pos.y = yPos;
+    }
+}
+
+class Circle {
+    constructor() {
+        this.pos = createVector();
+    }
+    set_pos(x, y, z) {
+        this.pos = createVector(x, y, z);
+        return this;
+    }
+    update_pos() {
+        let noiseVal = noise(this.pos.x * earth_params.WaveAngleFreq, this.pos.z * earth_params.WaveAngleFreq, frame * earth_params.WaveAngleFreq);
+        let yPos = map(noiseVal, 0, 1, -150, 150)
+        this.pos.y = yPos;
+    }
+    set_size(r) {
+        this.radians = r;
+        this.updatedR = this.radians;
+        return this;
+    }
+    set_rAdj(rAdj) { // outer distance toward the base rad // remember for calculating breath ampl
+        this.rAdj = rAdj;
+        return this;
+    }
+    set_breath_FreqAmpl(freq, min, max) {
+        let breathAmp = map(this.rAdj, 0, earth_params.sizeMax - earth_params.sizeMin, min, max);
+        this.breathFreq = freq;
+        this.breathAmpl = breathAmp;
+        return this;
+    }
+    breath() { // update R
+        this.updatedR = this.radians + mSin(frame * this.breathFreq) * this.breathAmpl;
+    }
+    addParticles() {
+        let randomAngle = random(2 * PI);
+        let randomPosX = mSin(randomAngle) * this.updatedR;
+        let randomPosZ = mCos(randomAngle) * this.updatedR;
+        let moveRange = map(this.radians, earth_params.sizeMin, earth_params.sizeMax, earth_params.moveRangeMin, earth_params.moveRangeMin);
+        let particle = new EarthParticle()
+            .set_pos(this.pos.x + randomPosX, this.pos.y, this.pos.z + randomPosZ)
+            .set_lifeReduction(earth_params.lifeReductionMin, earth_params.lifeReductionMax)
+            .set_angle(randomAngle)
+            .set_rad(this.radians) // 粒子所在的相对大圆的角度位置，用于之后flow的noise的参数（连贯数值）
+            .set_moveRange(moveRange);
+        particles.push(particle);
+    }
+}
 
 
 // ======================= THUNDER =========================
 
+class ThunderParticle extends ParticleBasic {
+    constructor() {
+        super();
+    }
+}
+class Thunder {
+    constructor() {
+        this.pos = createVector();
+        this.vel = createVector();
+        this.lifespan = 1;
+        this.lifeReduction = random(0.004, 0.005);
+        this.isDone = false;
+        this.depth = 1;
+    }
+    set_pos(x, y, z = 0) {
+        this.pos = createVector(x, y, z);
+        return this;
+    }
+    set_vel(x, y, z = 0) {
+        this.vel = createVector(x, y, z);
+        return this;
+    }
+    set_lifeReduction(val) {
+        this.lifeReduction = val;
+        return this;
+    }
+    set_spd(spd) {
+        this.vel.normalize();
+        this.vel.mult(spd);
+        return this;
+    }
+    set_lifespan(val) {
+        this.lifespan = val;
+        return this;
+    }
+    reduce_depth(val) {
+        this.depth -= val;
+        if (this.depth <= 0) {
+            this.depth = 0;
+            this.isDone = true;
+        }
+        return this;
+    }
+    age() {
+        this.lifespan -= this.lifeReduction;
+        if (this.lifespan <= 0) {
+            this.lifespan = 0;
+            this.isDone = true;
+        }
+    }
+    adjust_age(val) {
+        this.lifespan -= val;
+    }
+    changeAngle(possibility) {
+        if (random(1) < possibility) {
+            let angle = radians(random(-thunder_params.AngleRange, thunder_params.AngleRange));
+            this.vel.rotate(angle);
+        }
+    }
+    rotate(angle) {
+        this.vel.rotate(angle);
+    }
+    move() {
+        this.pos.add(this.vel);
+    }
+    check_boundary() { // check canvas boundary
+        // if (this.pos.x > params_basic.W)
+        if (this.pos.x < - params_basic.WORLD_WIDTH / 2
+            || this.pos.x > params_basic.WORLD_WIDTH / 2
+            || this.pos.y < -params_basic.WORLD_HEIGHT / 2
+            || this.pos.y > params_basic.WORLD_HEIGHT / 2
+            || this.pos.z < -params_basic.WORLD_DEPTH / 2
+            || this.pos.z > params_basic.WORLD_DEPTH / 2
+        ) {
+            this.isDone = true;
+        }
+    }
+    remove() {
+        if (this.isDone) {
+            let index = thunder_thunders.indexOf(this);
+            if (index > -1) {
+                thunder_thunders.splice(index, 1);
+            }
+        }
+    }
 
+}
 
 // ======================== FIRE ==========================
 class FireParticle extends ParticleBasic {
@@ -257,37 +421,4 @@ class FireParticle extends ParticleBasic {
 // ======================== WIND ==========================
 
 
-// ---------- Earth ---------- 
-class EarthParticle extends ParticleBasic {
-    constructor() {
-        super();
-        this.angle = 0;
-        this.rad = 0;
-        this.moveRange = 0;
-        this.moveScl = random();
-    }
-    push_to_particle(array) { }
-    set_angle() { } // par在这个圆的什么位置
-    set_rad() { }
-    set_moveRange() { }
-    wave() { }
-}
-class Circle {
-    // generate EarthParticles
-}
-
-// ---------- Thunder ---------- 
-class ThunderParticle extends ParticleBasic {
-    constructor() {
-        super();
-        this.moveScl = random();
-    }
-    check_pos() { }
-}
-class Thunder {
-    super();
-    // generate LightningParticles
-}
-
-*/
 
