@@ -1,5 +1,0 @@
-1. do I need the color array for the particles? 
-    for each visualizations, I applied color[i] = p.color.r * p.lifeSpan -- so I think it's necessary
-    but not sure if I can use an OPACITY array to substitude the COLOR array
-        --> and not sure if it will help with reducing the space complexity (trade to a larger number of particles)
-2. 
