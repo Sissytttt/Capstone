@@ -1,13 +1,13 @@
-function get_SingingBowl(path) {
+function get_audio(path) {
     const audioListener = new THREE.AudioListener();
     camera.add(audioListener);
-    singingBowl = new THREE.Audio(audioListener);
-    scene.add(voiceOver);
+    SingingBowl = new THREE.Audio(audioListener);
+    scene.add(SingingBowl);
     const sloader = new THREE.AudioLoader();
     sloader.load(
         path,
         function (audioBuffer) {
-            voiceOver.setBuffer(audioBuffer);
+            SingingBowl.setBuffer(audioBuffer);
         },
         function (xhr) {
             console.log((xhr.loaded / xhr.total * 100) + '% loaded');
@@ -16,5 +16,5 @@ function get_SingingBowl(path) {
             console.log('An error happened');
         }
     );
-    // voiceOver.play();
+    console.log("playing SingingBowl")
 }

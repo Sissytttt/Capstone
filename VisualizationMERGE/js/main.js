@@ -5,7 +5,9 @@ let mode = "NONE";
 let play = false;
 let CanChange = false; // need to wait canvasClean -> change the next mode
 
+let SingingBowl;
 function setupThree() {
+  get_audio('assets/sound/SingingBowl_low.MP3');
   setupFastSinCos();
   setup_Ps();
   // Points
@@ -104,3 +106,15 @@ function updateThree() {
       break;
   }
 }
+
+
+function playSoundOnce() {
+  if (!SingingBowl.isPlaying) {
+    SingingBowl.play();
+  } else {
+    console.log('Audio is already playing. Cannot play again.');
+  }
+}
+
+document.addEventListener('click', playSoundOnce);
+
