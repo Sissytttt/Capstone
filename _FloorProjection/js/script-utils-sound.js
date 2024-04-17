@@ -79,8 +79,5 @@ function playSingingBowlBasedOnPhase() {
         case 5:
             playOnce_SingingBowl(SingingBowl5);
             break;
-        case 6:
-            playOnce_SingingBowl(SingingBowl_high);
-            break;
     }
 }

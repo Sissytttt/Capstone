@@ -12,9 +12,8 @@
 // reture to phase 1, starts a new cycle
 
 // ------------------------ TODO --------------------
-// why phase 5's vel is set automatically?????????
+// why phase 5's vel is set automatically ??
 // restart sometimes not working well (?)
-// restart -- 不要用space bar，自己过度（phase 5 的particles消失之后）
 
 let params = {
   particleNum: 0,
@@ -46,8 +45,8 @@ let params = {
 
   // phase 2 -- bagua rotation
   phase2_particleNumber: 5000,
-  phase2_lifeReductionMin: 0.001,
-  phase2_lifeReductionMax: 0.015,
+  phase2_lifeReductionMin: 0.003,
+  phase2_lifeReductionMax: 0.05,
   phase2_rotationSpeedTop: 0.5,
   phase2_rotationSpeedAcc: 0.00001,
   phase2_rotationParVelRange: 0.1,
@@ -134,7 +133,7 @@ function setupThree() {
   audioListener = new THREE.AudioListener();
   camera.add(audioListener);
   get_SingingBowl_low('assets/sound/SingingBowl_low.MP3');
-  get_SingingBowl_high('asset/sound/SingingBowl_low.MP3')
+  get_SingingBowl_high('assets/sound/SingingBowl_high.MP3')
   setupFastSinCos();
   init_randomAngle = radians(random(360));
   if (testMode == true) { // fast speed
@@ -356,6 +355,8 @@ function move_center() {
   else if (trajAngle > 360) {
     phase1Finish = true;
     phase2StartTime = frame;
+    console.log("should play")
+    playOnce_SingingBowl(SingingBowl_high);
   }
 }
 
@@ -374,9 +375,6 @@ function phase1_updateParticles() {
   }
 }
 
-function log_phase1step() {
-  console.log(phase1_step);
-}
 // ====================== phase 2 ==========================
 function phase2_Rotation() {
   if (phase2stage2Start) {
@@ -881,11 +879,12 @@ function onKeyDown(event) {
       SmallCircleRad = params.phase1_breathCircle_Rad;
       breathingAmp = params.phase1_breathCircle_Amp;
       // trace
-      trajAngle = 0;
+      trajAngle = -1;
       traceAdjAngle = 0;
       rotationSpeed = 0;
       spread = false;
       circleThreshold = 0;
+      params.phase2_spreadRad = 0;
       // whole process
       pause = true;
       phase2StartTime = 0;
@@ -904,7 +903,6 @@ document.addEventListener('click', function () {
   playSoundOnce = false;
   phase1_step += 1;
   mouseIsClicked = true;
-  console.log(phase1_step);
   console.log("mouse is clicked");
 });
 
