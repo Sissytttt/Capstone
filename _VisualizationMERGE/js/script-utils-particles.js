@@ -26,6 +26,7 @@ function water_update_Ps() {
         let p = particles[i];
         p.flow(water_params.FlowPosFreq, water_params.FlowTimeFreq, water_params.MoveSpd);
         p.move();
+        p.update_opacity();
         p.age();
         if (p.isDone) {
             particles.splice(i, 1);
@@ -75,6 +76,7 @@ function mountain_update_Ps() {
         p.move_down(mountain_params.velocity);
         p.apply_outsideForce(mountain_params.outsideForce_strength);
         p.move();
+        p.update_opacity();
         p.check_boundary();
         p.remove();
         if (mountain_params.fade == true) {
@@ -121,6 +123,7 @@ function earth_update_Ps() {
         p.wave();
         p.move();
         p.age();
+        p.update_opacity();
         p.remove();
     }
 }
@@ -169,6 +172,7 @@ function thunder_update_Ps() {
         p.move();
         p.age();
         p.check_boundary();
+        p.update_opacity();
         p.remove();
     }
 }
@@ -204,11 +208,124 @@ function add_Branch(thunder, possibility) {
 }
 
 // ======================== FIRE ==========================
+function fire_setup_Ps() {
+    while (particles.length < params_basic.PARTICLE_NUMBER) {
+        generate_new_particle();
+    }
+}
+function fire_generate_Ps() {
+    while (particles.length < params_basic.PARTICLE_NUMBER) {
+        if (random() < fire_params.proportion) {
+            generate_new_particle();
+        }
+        else {
+            add_upper_points();
+        }
+    }
+}
+function generate_new_particle() {
+    let x = random(-params_basic.WORLD_WIDTH / 2, params_basic.WORLD_WIDTH / 2);
+    // let powFactor = 5;
+    let powFactor = fire_params.distributionFactor;
+    let distributionFreq = fire_params.distributionFreq;
+    let noiseFreq = x * distributionFreq + frame * 0.005;
+    let noiseValue = noise(noiseFreq);
+    let threshold = map(pow(noiseValue, powFactor), 0, 1, 0, 1);
+    let lifeReduction = map(noise(noiseFreq), 0, 1, 0.007, 0.001);
+    let moveUp = map(noiseValue, 0, 1, 0, 1);
+    if (random(1) < threshold) {
+        let p = new FireParticle()
+            .set_pos(x, 0 - params_basic.WORLD_HEIGHT / 2, 0)
+            .set_lifeReduction(lifeReduction)
+            .set_move_up(moveUp)
+            .set_forceScl(noiseValue);
+        particles.push(p);
+    }
+}
+function fire_update_Ps() {
+    for (let i = 0; i < particles.length; i++) {
+        let p = particles[i];
+        p.flow();
+        p.moveup();
+        p.move();
+        p.apply_outsideForce(1);
+        p.update_opacity(fire_params.opacityAdj);
+        p.age();
+        if (p.isDone || p.pos.y > params_basic.WORLD_HEIGHT / 2) {
+            particles.splice(i, 1);
+            i--; // not flipped version
+        }
+    }
+}
+function add_upper_points() {
+    let distributionFreq = 0.01;
+    let x = random(-params_basic.WORLD_WIDTH / 2, params_basic.WORLD_WIDTH / 2);
+    let y = random(-params_basic.WORLD_HEIGHT / 2, params_basic.WORLD_HEIGHT / 2);
+    let xFreq = (x + 1000) * distributionFreq + sin(frame * 0.005);
+    // let xFreq = x * distributionFreq + frame * 0.005;
+    let yFreq = y * distributionFreq - frame * 0.005;
+    let noiseValue = noise(xFreq, yFreq);
+    let lifeReduction = map(noiseValue, 0, 1, fire_params.lifeReductionMin, fire_params.lifeReductionMax);
+    let moveUp = map(noiseValue, 0, 1, 0, 1);
+    if ((noiseValue > fire_params.areaSize)) {
+        let p = new FireParticle()
+            .set_pos(x, y, 0)
+            .set_lifeReduction(lifeReduction)
+            .set_move_up(moveUp)
+            .set_forceScl(noiseValue);
+        particles.push(p);
+    }
+}
 
 
 
 // ======================== LAKE ==========================
 
+function lake_set_waves() {
+    if (lake_WavePos.length > 0) {
+        lake_WavePos = [];
+        lake_waves = []
+    }
+    for (let i = 0; i < lake_params.WaveNum; i++) { // Wvel, XoffsetAmp = 200, sinForFreqAmp = 0.005, sinForAmp_amp = 100)
+        let sign = Math.random() < 0.5 ? -1 : 1;
+        let Wvel = sign * random(0.8, 1.2); // * frameCount // big = fast
+        let XoffsetAmp = random(100, 600);
+        let timeOffset = floor(random(200));
+        let sinForFreq_amp = random(0.7, 1.3);
+        let sinForAmp_amp = random(0.7, 1.3);
+        lake_WaveAttri.push([Wvel, XoffsetAmp, timeOffset, sinForFreq_amp, sinForAmp_amp]);
+        WposX = 0;
+        WposY = random(-params_basic.WORLD_HEIGHT / 4, params_basic.WORLD_HEIGHT / 4);
+        WposZ = random(-params_basic.WORLD_DEPTH / 5, params_basic.WORLD_DEPTH / 5);
+        lake_WavePos.push([WposX, WposY, WposZ]);
+    }
+    for (let i = 0; i < lake_params.WaveNum; i++) {
+        let wave = new LakeWave(...lake_WaveAttri[i]).setPos(...lake_WavePos[i]);
+        lake_waves.push(wave);
+    }
+}
+
+
+function lake_generate_Ps() {
+    while (particles.length < params_basic.PARTICLE_NUMBER) {
+        let random_wave = Math.floor(Math.random() * lake_waves.length);
+        lake_waves[random_wave].addNewParticle();
+    }
+}
+
+function lake_update_Ps() {
+    for (let i = 0; i < particles.length; i++) {
+        let p = particles[i];
+        p.flow();
+        p.move();
+        p.age();
+        p.update_opacity();
+        if (p.isDone) {
+            particles.splice(i, 1);
+            i--;
+        }
+    }
+}
 
 
 // ======================= HEAVEN =========================

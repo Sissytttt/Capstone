@@ -1,5 +1,5 @@
 let params_basic = {
-    PARTICLE_NUMBER: 10000,
+    PARTICLE_NUMBER: 6000,
     Particles_in_scene: 0,
     WORLD_WIDTH: 1600,
     WORLD_HEIGHT: 900,
@@ -38,7 +38,7 @@ let control = {
 // water
 let LinePos = [];
 let Lines = [];
-let space_int = 0, space_int_prev = -1;
+let water_space_int = 0, water_space_int_prev = -1;
 let update_lineNum = false;
 
 
@@ -110,10 +110,50 @@ let thunder_thunders = [];
 
 // ======================== FIRE ==========================
 
-
+let fire_params = {
+    color: "#FFFFFF",
+    // particles
+    lifeSpan: 1,
+    proportion: 0.5, // the portion of upper fire and lower fire // big = lower more
+    // lower fire // decrease lifespan to check the following
+    distributionFactor: 5, // 集中/均匀生成粒子 // big = condense // power factor for mapping the noise value
+    distributionFreq: 0.02, // 火苗更大/更细小 // big = small // frequency for noise postions
+    // upper fire
+    areaSize: 0.75,
+    // move
+    flowSpd: 0.008,
+    moveupSpd: 1,
+    flowForceX: 15,
+    flowForceY: 10,
+    flowForceZ: 15,
+    opacityAdj: 0.1,
+    lifeReductionMin: 0.001,
+    lifeReductionMax: 0.007,
+};
 
 // ======================== LAKE ==========================
+let lake_params = {
+    // basic
+    Particles_in_scene: 0,
+    MAX_PARTICLE_NUMBER: 3000,
+    // wave
+    WaveNum: 5,
+    Wvel: 0.1,
+    Wamplitude: 100,
+    WampFreqSin: 0.002,
+    WposScatter: 1,
+    //particles
+    lifeReductionMin: 0.02,
+    lifeReductionMax: 0.07,
+};
 
+
+let lake_space_int = 0, lake_space_int_prev = -1;
+let lake_update_lineNum = false;
+
+let lake_WaveAttri = [];
+let lake_WavePos = [];
+let lake_waves = [];
 
 
 // ======================= HEAVEN =========================

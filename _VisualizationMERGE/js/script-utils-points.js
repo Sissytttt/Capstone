@@ -7,9 +7,9 @@ function update_points() {
         positionArray[ptIndex + 0] = p.pos.x;
         positionArray[ptIndex + 1] = p.pos.y;
         positionArray[ptIndex + 2] = p.pos.z;
-        colorArray[ptIndex + 0] = p.color.r * p.lifespan;
-        colorArray[ptIndex + 1] = p.color.g * p.lifespan;
-        colorArray[ptIndex + 2] = p.color.b * p.lifespan;
+        colorArray[ptIndex + 0] = p.color.r * p.opacity;
+        colorArray[ptIndex + 1] = p.color.g * p.opacity;
+        colorArray[ptIndex + 2] = p.color.b * p.opacity;
     }
     pointCloud.geometry.setDrawRange(0, particles.length); // ***
     pointCloud.geometry.attributes.position.needsUpdate = true;

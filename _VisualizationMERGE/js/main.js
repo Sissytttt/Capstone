@@ -67,6 +67,37 @@ function onKeyDown(event) {
       thunder_setup_thunders();
       thunder_generate_Ps();
       break;
+    case "5":
+      remove_all_GUIs();
+      fire_GUI_MOVEMENT();
+      mode = "FIRE";
+      play = true;
+      fire_setup_Ps();
+      break;
+    case "6":
+      remove_all_GUIs();
+      lake_GUI_MOVEMENT();
+      mode = "LAKE";
+      play = true;
+      lake_set_waves();
+      lake_generate_Ps();
+      break;
+    // case "7":
+    //   remove_all_GUIs();
+    //   heaven_GUI_MOVEMENT();
+    //   mode = "HEAVEN";
+    //   play = true;
+    //   thunder_setup_thunders();
+    //   thunder_generate_Ps();
+    //   break;
+    // case "8":
+    //   remove_all_GUIs();
+    //   wind_GUI_MOVEMENT();
+    //   mode = "WIND";
+    //   play = true;
+    //   thunder_setup_thunders();
+    //   thunder_generate_Ps();
+    //   break;
   }
 }
 
@@ -102,6 +133,28 @@ function updateThree() {
       thunder_update_thunders();
       thunder_interaction_controller();
       break;
+    case "FIRE":
+      fire_generate_Ps();
+      fire_update_Ps();
+      fire_interaction_controller();
+      break;
+    case "LAKE":
+      lake_generate_Ps();
+      lake_update_Ps();
+      lake_interaction_controller();
+      break;
+    // case "HEAVEN":
+    //   earth_generate_Ps();
+    //   earth_update_circles();
+    //   earth_update_Ps();
+    //   earth_interaction_controller();
+    //   break;
+    // case "WIND":
+    //   thunder_generate_Ps();
+    //   thunder_update_Ps();
+    //   thunder_update_thunders();
+    //   thunder_interaction_controller();
+    //   break;
   }
 }
 

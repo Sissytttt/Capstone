@@ -18,7 +18,7 @@ function water_interaction_controller() {
 
     // Space
     if (update_lineNum) {
-        water_params.Line_Num = map(space_int, 0, 10 / 3, 10, 40);
+        water_params.Line_Num = map(water_space_int, 0, 10 / 3, 10, 40);
         water_setup_lines();
         update_lineNum = false;
     }
@@ -38,13 +38,15 @@ function water_interaction_controller() {
         water_params.lifeReductionMax = map(control.Flow, 5, 10, 0.02, 0.05);
     }
 }
-function update_space_int() {
+
+
+function water_update_space_int() {
     let calc_space_int = floor(control.Space / 3);
-    space_int_prev = space_int;
-    if (calc_space_int != space_int) {
-        space_int = calc_space_int;
+    water_space_int_prev = water_space_int;
+    if (calc_space_int != water_space_int) {
+        water_space_int = calc_space_int;
     }
-    if (space_int_prev != space_int) {
+    if (water_space_int_prev != water_space_int) {
         update_lineNum = true;
     }
     else {
@@ -52,7 +54,6 @@ function update_space_int() {
     }
     console.log(calc_space_int);
 }
-
 
 
 
@@ -196,11 +197,94 @@ function thunder_interaction_controller() {
     }
 }
 // ======================== FIRE ==========================
-function fire_interaction_controller() { }
+function fire_interaction_controller() {
+    if (control.Weight < 5) {
+        fire_params.opacityAdj = map(control.Weight, 0, 5, 0.5, 0);
+    }
+    else {
+        fire_params.opacityAdj = 0;
+    }
+
+    // time 
+    if (control.Time < 5) {
+        fire_params.moveupSpd = map(control.Time, 0, 5, 0.7, 1.2);
+        fire_params.lifeSpan = 1;
+        fire_params.flowForceX = 15;
+    }
+    else {
+        fire_params.moveupSpd = map(control.Time, 5, 10, 1.2, 3);
+        fire_params.lifeSpan = map(control.Time, 5, 10, 1, 0.7);
+    }
+
+    // Space
+    if (control.Space <= 5) {
+        fire_params.distributionFreq = map(control.Space, 0, 5, 0.06, 0.02);
+    }
+    else {
+        fire_params.distributionFreq = map(control.Space, 5, 10, 0.02, 0.01);
+    }
+
+    // flow
+    if (control.Flow > 8) { // flow value big - not fluent
+        fire_params.areaSize = map(control.Flow, 8, 10, 1, 0.6);
+    }
+    else {
+        fire_params.areaSize = 1;
+    }
+}
+
 
 
 // ======================== LAKE ==========================
-function lake_interaction_controller() { }
+function lake_interaction_controller() {
+    // weight
+    if (control.Weight < 5) {
+        lake_params.Wamplitude = map(control.Weight, 0, 5, 30, 100);
+        lake_params.WposScatter = map(control.Weight, 0, 5, 0.8, 1);
+    }
+    else {
+        lake_params.Wamplitude = map(control.Weight, 5, 10, 100, 300);
+        lake_params.WposScatter = map(control.Weight, 5, 10, 1, 3);
+    }
+
+    // time 
+    if (control.Time <= 5) {
+        lake_params.WampFreqSin = map(control.Time, 0, 5, 0.0005, 0.003);
+    }
+    else {
+        lake_params.WampFreqSin = map(control.Time, 0, 5, 0.003, 0.006);
+    }
+
+    // Space
+    if (lake_update_lineNum) {
+        lake_params.LakeNum = map(lake_space_int, 0, 10 / 3, 3, 10);
+        lake_set_waves();
+        lake_update_lineNum = false;
+    }
+
+    // flow
+    if (control.Flow <= 5) {
+        lake_params.Wvel = map(control.Flow, 0, 5, 0.001, 0.1);
+    }
+    else {
+        lake_params.Wvel = map(control.Flow, 5, 10, 0.1, 2);
+    }
+}
+
+
+function lake_update_space_int() {
+    let calc_space_int = floor(control.Space / 3);
+    lake_space_int_prev = lake_space_int;
+    if (calc_space_int != lake_space_int) {
+        lake_space_int = calc_space_int;
+    }
+    if (lake_space_int_prev != lake_space_int) {
+        lake_update_lineNum = true;
+    }
+    else {
+        lake_update_lineNum = false;
+    }
+}
 
 
 // ======================= HEAVEN =========================

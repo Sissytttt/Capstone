@@ -6,7 +6,7 @@ let params = {
   WORLD_HEIGHT: 300,
   WORLD_DEPTH: 500,
   // wave
-  WaveNum: 1,
+  WaveNum: 5,
   /*
     let Wvel = sign * random(0.001, 0.03);  // * frameCount // big = fast
     let XoffsetAmp = random(100, 600);
@@ -15,12 +15,9 @@ let params = {
     let sinForAmp_amp = random(30, 250);
   */
   Wvel: 0.1,
-  WsinForFreq_ampMin: 0.002,
-  WsinForFreq_ampMax: 0.007,
-  // WsinForAmp_ampMin: 30,
-  // WsinForAmp_ampMax: 50,
-  WsinForAmp_amp: 100,
-
+  Wamplitude: 100, // 30-250
+  WampFreqSin: 0.002,
+  WposScatter: 1,
   //particles
   lifeReductionMin: 0.02,
   lifeReductionMax: 0.07,
@@ -34,6 +31,8 @@ let control = {
   Flow: 5,
 }
 
+let space_int = 0, space_int_prev = -1;
+let update_lineNum = false;
 
 let WaveAttri = []; // 
 let WavePos = [];
@@ -67,28 +66,10 @@ function setupThree() {
 
   let folderWave = gui.addFolder("Wave Parameters");
   folderWave.add(params, "WaveNum", 1, 20, 1).onChange(setWaves);
-  /*
-  let Wvel = sign * random(0.001, 0.03);  // * frameCount // big = fast
-  let XoffsetAmp = random(100, 600);
-  let timeOffset = floor(random(200));
-  let sinForFreqAmp = random(0.002, 0.007);
-  let sinForAmp_amp = random(30, 250);
-
-  WvelMin = 0.001,
-  WvelMax = 0.03,
-  WsinForFreq_ampMin = 0.002,
-  WsinForFreq_ampMax = 0.007,
-  WsinForAmp_ampMin = 30,
-  WsinForAmp_ampMax = 50,
-  */
   folderWave.add(params, "Wvel", 0.001, 0.01, 0.001);
-  // folderWave.add(params, "WvelMin", 0.001, 0.03, 0.001);
-  // folderWave.add(params, "WvelMax", 0.001, 0.01, 0.001);
-  // folderWave.add(params, "WsinForFreq_ampMin", 0.001, 0.01, 0.001);
-  // folderWave.add(params, "WsinForFreq_ampMax", 0.001, 0.01, 0.001);
-  // folderWave.add(params, "WsinForAmp_ampMin", 0.001, 0.01, 0.001);
-  // folderWave.add(params, "WsinForAmp_ampMax", 0.001, 0.01, 0.001);
-  folderWave.add(params, "WsinForAmp_amp", 30, 50, 1);
+  folderWave.add(params, "Wamplitude", 30, 500, 1);
+  folderWave.add(params, "WampFreqSin", 0.001, 0.007, 0.001);
+  folderWave.add(params, "WposScatter", 0.8, 3, 0.1);
 
 
 
@@ -102,6 +83,8 @@ function setupThree() {
 }
 
 function updateThree() {
+  controller();
+  update_space_int();
   while (particles.length < params.MAX_PARTICLE_NUMBER) {
     let random_wave = Math.floor(Math.random() * waves.length);
     waves[random_wave].addNewParticle();
@@ -174,13 +157,11 @@ function setWaves() {
   }
   for (let i = 0; i < params.WaveNum; i++) { // Wvel, XoffsetAmp = 200, sinForFreqAmp = 0.005, sinForAmp_amp = 100)
     let sign = Math.random() < 0.5 ? -1 : 1;
-    // let Wvel = sign * random(0.001, 0.03);  // * frameCount // big = fast
-    let Wvel = sign * random(params.Wvel * 0.8, params.Wvel * 1.2);
+    let Wvel = sign * random(0.8, 1.2); // * frameCount // big = fast
     let XoffsetAmp = random(100, 600);
     let timeOffset = floor(random(200));
-    let sinForFreq_amp = random(0.002, 0.007);
-    // let sinForAmp_amp = random(30, 250);
-    let sinForAmp_amp = random(params.WsinForAmp_amp * 0.8, params.WsinForAmp_amp * 1.2, 250);
+    let sinForFreq_amp = random(0.7, 1.3);
+    let sinForAmp_amp = random(0.7, 1.3);
     WaveAttri.push([Wvel, XoffsetAmp, timeOffset, sinForFreq_amp, sinForAmp_amp]);
 
     WposX = 0;
@@ -193,9 +174,21 @@ function setWaves() {
     let wave = new Wave(...WaveAttri[i]).setPos(...WavePos[i]);
     waves.push(wave);
   }
-
 }
 
+function update_space_int() {
+  let calc_space_int = floor(control.Space / 3);
+  space_int_prev = space_int;
+  if (calc_space_int != space_int) {
+    space_int = calc_space_int;
+  }
+  if (space_int_prev != space_int) {
+    update_lineNum = true;
+  }
+  else {
+    update_lineNum = false;
+  }
+}
 
 // ======================
 class Particle {
@@ -316,59 +309,58 @@ class Wave {
     this.pos = createVector(x, y, z);
     return this;
   }
-
   addNewParticle() {
     let p_posx = random(-params.WORLD_WIDTH / 2, params.WORLD_WIDTH / 2);
     let freq = frame * 0.01 + this.timeOffset;
-    let sinXoffset = sin(freq) * this.Xoffset - 800;// WORLD_WIDTH/2
-    let sinForFreq = sin(freq) * this.amp_freqSin;
-    let ampl = noise(freq) * this.AmpSin;
     // let sinXoffset = sin(freq) * 100 - 800;
     // let sinForFreq = sin(freq) * 0.003;
     // let ampl = noise(freq) * 300;
+    let sinXoffset = (sin(freq) + noise(freq + this.Xoffset)) * this.Xoffset - 800;// WORLD_WIDTH/2
+    let sinForFreq = sin(freq) * this.amp_freqSin * params.WampFreqSin;
+    let ampl = noise(freq) * this.AmpSin * params.Wamplitude;
     let mainSineFreq = (p_posx + sinXoffset) * sinForFreq;
-    // let mainSineFreq = (p_posx) * sinForFreq;
     let sinValue = sin(mainSineFreq) * ampl;
-    // console.log(sin(mainSineFreq), sinValue)
     let particle = new Particle()
-      .set_pos(p_posx, this.pos.y + sinValue, this.pos.z)
+      .set_pos(p_posx, (this.pos.y * params.WposScatter) + sinValue, this.pos.z)
       .set_movingDir(sinValue)
-      .set_movingVel(this.vel);
+      .set_movingVel(this.vel * params.Wvel);
     particles.push(particle);
   }
 
 }
 
 function controller() {
+
   // weight
   if (control.Weight < 5) {
-    params.opacityAdj = map(control.Weight, 0, 5, 0.5, 0);
+    params.Wamplitude = map(control.Weight, 0, 5, 30, 100);
+    params.WposScatter = map(control.Weight, 0, 5, 0.8, 1);
+  }
+  else {
+    params.Wamplitude = map(control.Weight, 5, 10, 100, 300);
+    params.WposScatter = map(control.Weight, 5, 10, 1, 3);
   }
 
   // time 
-  if (control.Time < 5) {
-    params.moveupSpd = map(control.Time, 0, 5, 0.7, 1.2);
-    params.lifeSpan = 1;
-    params.flowForceX = 15;
+  if (control.Time <= 5) {
+    params.WampFreqSin = map(control.Time, 0, 5, 0.0005, 0.003);
   }
   else {
-    params.moveupSpd = map(control.Time, 5, 10, 1.2, 3);
-    params.lifeSpan = map(control.Time, 5, 10, 1, 0.7);
+    params.WampFreqSin = map(control.Time, 0, 5, 0.003, 0.007);
   }
 
   // Space
-  if (control.Space <= 5) {
-    params.distributionFreq = map(control.Space, 0, 5, 0.06, 0.02);
-  }
-  else {
-    params.distributionFreq = map(control.Space, 5, 10, 0.02, 0.01);
+  if (update_lineNum) {
+    params.WaveNum = map(space_int, 0, 10 / 3, 3, 10);
+    setWaves();
+    update_lineNum = false;
   }
 
   // flow
-  if (control.Flow > 8) { // flow value big - not fluent
-    params.areaSize = map(control.Flow, 8, 10, 1, 0.6);
+  if (control.Flow <= 5) {
+    params.Wvel = map(control.Flow, 0, 5, 0.001, 0.1);
   }
   else {
-    params.areaSize = 1;
+    params.Wvel = map(control.Flow, 5, 10, 0.1, 1);
   }
 }

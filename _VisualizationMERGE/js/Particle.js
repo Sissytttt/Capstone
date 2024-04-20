@@ -8,7 +8,7 @@ class ParticleBasic {
         this.scl = createVector(1, 1, 1);
         this.mass = this.scl.x * this.scl.y * this.scl.z;
         this.color = { r: 255, g: 255, b: 255 }; // ?
-
+        this.opacity = 1;
         this.lifespan = 1.0;
         this.lifeReduction = 0;
         this.isDone = false;
@@ -54,6 +54,9 @@ class ParticleBasic {
         this.vel.add(this.acc);
         this.pos.add(this.vel);
         this.acc.mult(0);
+    }
+    update_opacity() {
+        this.opacity = this.lifespan;
     }
     apply_force(f) {
         let force = f.copy();
@@ -404,15 +407,118 @@ class FireParticle extends ParticleBasic {
     constructor() {
         super();
     }
+    set_lifeReduction(val) { // overwrite
+        this.lifeReduction = val;
+        return this;
+    }
+    set_move_up(val) {
+        this.moveUp = val;
+        return this;
+    }
+    set_forceScl(val) {
+        this.forceScl = val;
+        return this;
+    }
+    moveup() {
+        let forceUp = new p5.Vector(0, 1, 0);
+        forceUp.mult(0.01);
+        forceUp.mult(this.moveUp * fire_params.moveupSpd)
+        this.apply_force(forceUp);
+    }
+    update_opacity(range) {
+        if (this.lifespan < range) {
+            let xFreq = this.pos.x * 0.003 + frame * 0.05;
+            let yFreq = this.pos.y * 0.003 + frame * 0.05;
+            let zFreq = this.pos.z * 0.005 + frame * 0.05;
+            let opcacityReduction = noise(xFreq, yFreq, zFreq);
+            this.opacity -= opcacityReduction;
+        }
+        else {
+            this.opacity = this.lifespan;
+        }
+    }
+    flow() {
+        let xFreq = this.pos.x * 0.03 + frame * 0.05;
+        let yFreq = this.pos.y * 0.05 + frame * 0.05;
+        let zFreq = this.pos.z * 0.05 + frame * 0.05;
+        let noiseValue1 = map(noise(xFreq, yFreq, zFreq), 0.0, 1.0, -fire_params.flowForceX, fire_params.flowForceX);
+        let noiseValue2 = map(noise(xFreq + 1000, yFreq + 1000, zFreq + 1000), 0.0, 1.0, - fire_params.flowForceY, fire_params.flowForceY);
+        let noiseValue3 = map(noise(xFreq + 2000, yFreq + 2000, zFreq + 2000), 0.0, 1.0, -fire_params.flowForceZ, fire_params.flowForceZ);
+        let force = new p5.Vector(noiseValue1, noiseValue2, noiseValue3);
+        force.normalize();
+        force.mult(fire_params.flowSpd);
+        this.apply_force(force);
+    }
+    apply_outsideForce(scl) {
+        let force = createVector(control.ForceX * this.forceScl, 0);
+        let scale = 0;
+        if (this.forceScl > 0.5) {
+            scale = map(this.forceScl, 0.5, 1, 0, 1);
+            force.mult(scl * 0.005 * scale);
+            this.apply_force(force);
+        }
+    }
 
-    set_move_up() { }
-    moveup() { }
 }
 
 
 // ======================== LAKE ==========================
+class LakeParticle extends ParticleBasic {
+    constructor() {
+        super();
+    }
+    set_movingDir(val) {
+        this.moveingDir = val;
+        return this;
+    }
+    flow() {
+        let xFreq = this.pos.x * 0.005 + frame * 0.005;
+        let yFreq = this.pos.y * 0.005 + frame * 0.005;
+        let zFreq = this.pos.z * 0.005 + frame * 0.005;
+        let noiseValue1 = map(noise(xFreq, yFreq, zFreq), 0.0, 1.0, -1, 1);
+        let noiseValue2 = map(noise(xFreq + 1000, yFreq + 1000, zFreq + 1000), 0.0, 1.0, 0, 1);
+        let noiseValue3 = map(noise(xFreq + 2000, yFreq + 2000, zFreq + 2000), 0.0, 1.0, -1, 1);
+        let force = new p5.Vector(noiseValue1, noiseValue2 * this.moveingDir, noiseValue3);
+        force.normalize();
+        force.mult(0.005);
+        this.apply_force(force);
+    }
+}
 
+class LakeWave {
+    constructor(Wvel, XoffsetAmp = 200, timeOffset, sinForFreqAmp = 0.005, sinForAmp_amp = 100) {
+        this.vel = Wvel; // * frameCount // big = fast
+        this.Xoffset = XoffsetAmp;
+        this.timeOffset = timeOffset;
+        this.amp_freqSin = sinForFreqAmp;
+        this.AmpSin = sinForAmp_amp;
+        return this;
+    }
 
+    setPos(x, y, z) {
+        this.pos = createVector(x, y, z);
+        return this;
+    }
+
+    addNewParticle() {
+        let p_posx = random(-params_basic.WORLD_WIDTH / 2, params_basic.WORLD_WIDTH / 2);
+        let freq = frame * 0.01 + this.timeOffset;
+        // let sinXoffset = sin(freq) * 100 - 800;
+        // let sinForFreq = sin(freq) * 0.003;
+        // let ampl = noise(freq) * 300;
+        let sinXoffset = (mSin(freq) + noise(freq + this.Xoffset)) * this.Xoffset - params_basic.WORLD_WIDTH / 2;
+        let sinForFreq = mSin(freq) * this.amp_freqSin * lake_params.WampFreqSin;
+        let ampl = noise(freq) * this.AmpSin * lake_params.Wamplitude;
+        let mainSineFreq = (p_posx + sinXoffset) * sinForFreq;
+        let sinValue = mSin(mainSineFreq) * ampl;
+        let particle = new LakeParticle()
+            .set_pos(p_posx, (this.pos.y * lake_params.WposScatter) + sinValue, this.pos.z)
+            .set_movingDir(sinValue)
+            .set_lifeReduction(lake_params.lifeReductionMin, lake_params.lifeReductionMax)
+            .set_vel(this.vel * lake_params.Wvel);
+        particles.push(particle);
+    }
+}
 
 // ======================= HEAVEN =========================
 

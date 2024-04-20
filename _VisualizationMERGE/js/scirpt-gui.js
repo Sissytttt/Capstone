@@ -22,7 +22,7 @@ function water_GUI_MOVEMENT() {
     water_ControlFolder.open();
     water_ControlFolder.add(control, "Weight", 0, 10, 0.1);
     water_ControlFolder.add(control, "Time", 0, 10, 0.1);
-    water_ControlFolder.add(control, "Space", 0, 10, 0.1).onChange(update_space_int);
+    water_ControlFolder.add(control, "Space", 0, 10, 0.1).onChange(water_update_space_int);
     water_ControlFolder.add(control, "Flow", 0, 10, 0.1);
 }
 
@@ -136,8 +136,25 @@ function fire_GUI_MOVEMENT() {
     fire_ControlFolder.add(control, "Time", 0, 10, 0.1);
     fire_ControlFolder.add(control, "Space", 0, 10, 0.1);
     fire_ControlFolder.add(control, "Flow", 0, 10, 0.1);
+    fire_ControlFolder.add(control, "ForceX", -5, 5, 0.1);
 }
+function GUI_for_fire() {
+    let folderBasic = gui.addFolder("WORLD BASIC");
+    // folderBasic.open();
+    folderBasic.add(params_basic, "PARTICLE_NUMBER", 0, fire_params.PARTICLE_NUMBER).step(1).listen();
+    folderBasic.addColor(fire_params, 'color');
 
+    let FactorsParticles = gui.addFolder("Particles_Factors");
+    FactorsParticles.add(fire_params, "lifeSpan", 0.5, 3).step(0.1);
+    // FactorsParticles.add(params, "opacityAdj", 0, 1).step(0.01);
+
+    let FactorsLower = gui.addFolder("LOWER_FIRE_Factors");
+    FactorsLower.add(fire_params, "distributionFactor", 1, 5).step(0.1);
+    FactorsLower.add(fire_params, "distributionFreq", 0.01, 0.06).step(0.001);
+
+    let FactorsUpper = gui.addFolder("UPPER_FIRE_Factors");
+    FactorsUpper.add(fire_params, "areaSize", 0, 1).step(0.01);
+}
 
 // ======================== LAKE ==========================
 function lake_GUI_MOVEMENT() {
@@ -145,11 +162,18 @@ function lake_GUI_MOVEMENT() {
     lake_ControlFolder.open();
     lake_ControlFolder.add(control, "Weight", 0, 10, 0.1);
     lake_ControlFolder.add(control, "Time", 0, 10, 0.1);
-    lake_ControlFolder.add(control, "Space", 0, 10, 0.1);
+    lake_ControlFolder.add(control, "Space", 0, 10, 0.1).onChange(lake_update_space_int);
     lake_ControlFolder.add(control, "Flow", 0, 10, 0.1);
 }
 
-
+function GUI_for_thunder() {
+    let folderWave = gui.addFolder("Wave Parameters");
+    folderWave.add(lake_params, "WaveNum", 1, 20, 1).onChange(setWaves);
+    folderWave.add(lake_params, "Wvel", 0.001, 0.01, 0.001);
+    folderWave.add(lake_params, "Wamplitude", 30, 500, 1);
+    folderWave.add(lake_params, "WampFreqSin", 0.001, 0.007, 0.001);
+    folderWave.add(lake_params, "WposScatter", 0.8, 3, 0.1);
+}
 // ======================= HEAVEN =========================
 function heaven_GUI_MOVEMENT() {
     let heaven_ControlFolder = gui.addFolder("heaven_CONTROL");
