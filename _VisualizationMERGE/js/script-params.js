@@ -36,10 +36,10 @@ let control = {
 }
 
 // water
-let LinePos = [];
-let Lines = [];
+let water_linePos = [];
+let water_lines = [];
 let water_space_int = 0, water_space_int_prev = -1;
-let update_lineNum = false;
+let water_update_lineNum = false;
 
 
 

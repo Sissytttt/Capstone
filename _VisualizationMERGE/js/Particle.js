@@ -1,6 +1,7 @@
 
 class ParticleBasic {
     constructor() {
+        this.isBasic = true;
         this.pos = createVector();
         this.vel = createVector();
         this.acc = createVector();
@@ -118,6 +119,7 @@ class ParticleBasic {
 class WaterParticle extends ParticleBasic {
     constructor() {
         super();
+        this.isBasic = false;
         // particles.push(this);
     }
     flow(posFreq = 0.05, timeFreq = 0.05, spd = 0.05) { //overwrite
@@ -181,6 +183,7 @@ class WaterLine {
 class MountainParticle extends ParticleBasic {
     constructor() {
         super();
+        this.isBasic = false;
         this.forceScl = 1;
     }
     move_down(v) {
@@ -235,6 +238,7 @@ class MountainParticle extends ParticleBasic {
 class EarthParticle extends ParticleBasic {
     constructor() {
         super();
+        this.isBasic = false;
         this.angle = 0;
         this.rad = 0;
         this.moveRange = 0;
@@ -317,6 +321,7 @@ class Circle {
 class ThunderParticle extends ParticleBasic {
     constructor() {
         super();
+        this.isBasic = false;
     }
 }
 class Thunder {
@@ -406,6 +411,7 @@ class Thunder {
 class FireParticle extends ParticleBasic {
     constructor() {
         super();
+        this.isBasic = false;
     }
     set_lifeReduction(val) { // overwrite
         this.lifeReduction = val;
@@ -466,6 +472,7 @@ class FireParticle extends ParticleBasic {
 class LakeParticle extends ParticleBasic {
     constructor() {
         super();
+        this.isBasic = false;
     }
     set_movingDir(val) {
         this.moveingDir = val;

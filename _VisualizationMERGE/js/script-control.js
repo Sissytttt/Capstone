@@ -17,10 +17,10 @@ function water_interaction_controller() {
     }
 
     // Space
-    if (update_lineNum) {
+    if (water_update_lineNum) {
         water_params.Line_Num = map(water_space_int, 0, 10 / 3, 10, 40);
         water_setup_lines();
-        update_lineNum = false;
+        water_update_lineNum = false;
     }
     if (control.Space <= 4) {
         water_params.ChangeSpeed = map(control.Space, 0, 4, 0.01, 0.03);
@@ -52,7 +52,6 @@ function water_update_space_int() {
     else {
         update_lineNum = false;
     }
-    console.log(calc_space_int);
 }
 
 

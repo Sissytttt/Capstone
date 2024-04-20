@@ -42,6 +42,7 @@ function onKeyDown(event) {
       water_GUI_MOVEMENT();
       mode = "WATER";
       play = true;
+      transition_Ps();
       water_setup_lines();
       break;
     case "2":
@@ -49,6 +50,7 @@ function onKeyDown(event) {
       mountain_GUI_MOVEMENT();
       mode = "MOUNTAIN";
       play = true;
+      transition_Ps();
       mountain_setup_Ps();
       break;
     case "3":
@@ -56,6 +58,7 @@ function onKeyDown(event) {
       earth_GUI_MOVEMENT();
       mode = "EARTH";
       play = true;
+      transition_Ps();
       earth_setup_circles();
       earth_generate_Ps();
       break;
@@ -64,6 +67,7 @@ function onKeyDown(event) {
       thunder_GUI_MOVEMENT();
       mode = "THUNDER";
       play = true;
+      transition_Ps();
       thunder_setup_thunders();
       thunder_generate_Ps();
       break;
@@ -72,6 +76,7 @@ function onKeyDown(event) {
       fire_GUI_MOVEMENT();
       mode = "FIRE";
       play = true;
+      transition_Ps();
       fire_setup_Ps();
       break;
     case "6":
@@ -79,6 +84,7 @@ function onKeyDown(event) {
       lake_GUI_MOVEMENT();
       mode = "LAKE";
       play = true;
+      transition_Ps();
       lake_set_waves();
       lake_generate_Ps();
       break;
@@ -87,6 +93,7 @@ function onKeyDown(event) {
     //   heaven_GUI_MOVEMENT();
     //   mode = "HEAVEN";
     //   play = true;
+    // transition_Ps();
     //   thunder_setup_thunders();
     //   thunder_generate_Ps();
     //   break;
@@ -95,6 +102,7 @@ function onKeyDown(event) {
     //   wind_GUI_MOVEMENT();
     //   mode = "WIND";
     //   play = true;
+    // transition_Ps();
     //   thunder_setup_thunders();
     //   thunder_generate_Ps();
     //   break;

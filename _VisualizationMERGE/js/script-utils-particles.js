@@ -1,8 +1,7 @@
-
 function setup_Ps() {
     while (particles.length < params_basic.PARTICLE_NUMBER) {
         let particle = new ParticleBasic()
-            .set_pos(random(-params_basic.WORLD_WIDTH / 2, params_basic.WORLD_WIDTH / 2), random(-params_basic.WORLD_HEIGHT / 2, params_basic.WORLD_HEIGHT / 2), random(-params_basic.WORLD_DEPTH / 2, params_basic.WORLD_DEPTH / 2))
+            .set_pos(random(-params_basic.WORLD_WIDTH / 2, params_basic.WORLD_WIDTH / 2), random(-params_basic.WORLD_HEIGHT / 2, params_basic.WORLD_HEIGHT / 2), random(0, -params_basic.WORLD_DEPTH))
             .set_lifeReduction(0.1, 0.01);
         particles.push(particle);
     }
@@ -13,43 +12,68 @@ function particles_disappear() {
         p.disappear();
     }
 }
+// ====================== TRANSITION ========================
+function transition_Ps() {
+    while (particles.length < params_basic.PARTICLE_NUMBER) {
+        let posX = random(-params_basic.WORLD_WIDTH / 2, params_basic.WORLD_WIDTH / 2);
+        let freq = 0.01;
+        let noiseVal = noise(posX * freq);
+        let vel = map(noiseVal, 0, 1, 0, 8);
+        vel *= random();
+        let threshold = map(noiseVal, 0, 1, 0.3, 1);
+        if (random(1) < threshold) {
+            let particle = new ParticleBasic()
+                .set_pos(posX, -params_basic.WORLD_HEIGHT / 2, 0)
+                .set_lifeReduction(0.05, 0.005)
+                .set_vel(0, vel)
+            particles.push(particle);
+        }
+
+    }
+}
+
 
 // ======================== WATER ==========================
-function water_generate_Ps() {
-    while (particles.length < params_basic.PARTICLE_NUMBER) {
-        let random_line = Math.floor(Math.random() * Lines.length);
-        Lines[random_line].add_NewParticle();
-    }
-}
-function water_update_Ps() {
-    for (let i = 0; i < particles.length; i++) {
-        let p = particles[i];
-        p.flow(water_params.FlowPosFreq, water_params.FlowTimeFreq, water_params.MoveSpd);
-        p.move();
-        p.update_opacity();
-        p.age();
-        if (p.isDone) {
-            particles.splice(i, 1);
-            i--;
-        }
-    }
-}
 function water_setup_lines() {
-    if (LinePos.length > 0 || Lines.length > 0) {
-        LinePos = [];
-        Lines = [];
+    if (water_linePos.length > 0 || water_lines.length > 0) {
+        water_linePos = [];
+        water_lines = [];
     }
     for (let i = 0; i < water_params.Line_Num; i++) {
         posX = random(-params_basic.WORLD_WIDTH / 2, params_basic.WORLD_WIDTH / 2);
         posY = 0;
         posZ = random(-params_basic.WORLD_DEPTH / 5, params_basic.WORLD_DEPTH / 5);
-        LinePos.push([posX, posY, posZ]);
+        water_linePos.push([posX, posY, posZ]);
     }
     for (let i = 0; i < water_params.Line_Num; i++) {
-        let line = new WaterLineClass()
-            .set_pos(...LinePos[i])
+        let line = new WaterLine()
+            .set_pos(...water_linePos[i])
             .set_spd((random() < 0.5 ? 1 : -1) * water_params.ChangeSpeed * random(-0.7, 1.3));
-        Lines.push(line);
+        water_lines.push(line);
+    }
+}
+
+function water_generate_Ps() {
+    while (particles.length < params_basic.PARTICLE_NUMBER) {
+        let random_line = Math.floor(Math.random() * water_lines.length);
+        water_lines[random_line].add_NewParticle();
+    }
+}
+function water_update_Ps() {
+    for (let i = 0; i < particles.length; i++) {
+        let p = particles[i];
+        if (p.isBasic == true) {
+            p.move();
+            p.age();
+            p.remove();
+        }
+        else {
+            p.flow(water_params.FlowPosFreq, water_params.FlowTimeFreq, water_params.MoveSpd);
+            p.move();
+            p.update_opacity();
+            p.age();
+            p.remove();
+        }
     }
 }
 
@@ -73,16 +97,22 @@ function mountain_generate_Ps() {
 function mountain_update_Ps() {
     for (let i = 0; i < particles.length; i++) {
         let p = particles[i];
-        p.move_down(mountain_params.velocity);
-        p.apply_outsideForce(mountain_params.outsideForce_strength);
-        p.move();
-        p.update_opacity();
-        p.check_boundary();
-        p.remove();
-        if (mountain_params.fade == true) {
+        if (p.isBasic == true) {
+            p.move();
             p.age();
+            p.remove();
         }
-        p.remove();
+        else {
+            p.move_down(mountain_params.velocity);
+            p.apply_outsideForce(mountain_params.outsideForce_strength);
+            p.move();
+            p.update_opacity();
+            p.check_boundary();
+            if (mountain_params.fade == true) {
+                p.age();
+            }
+            p.remove();
+        }
 
     }
 }
@@ -118,13 +148,21 @@ function earth_update_circles() {
     }
 }
 function earth_update_Ps() {
+
     for (let i = 0; i < particles.length; i++) {
         let p = particles[i];
-        p.wave();
-        p.move();
-        p.age();
-        p.update_opacity();
-        p.remove();
+        if (p.isBasic == true) {
+            p.move();
+            p.age();
+            p.remove();
+        }
+        else {
+            p.wave();
+            p.move();
+            p.age();
+            p.update_opacity();
+            p.remove();
+        }
     }
 }
 
@@ -168,12 +206,19 @@ function thunder_update_thunders() {
 function thunder_update_Ps() {
     for (let i = 0; i < particles.length; i++) {
         let p = particles[i];
-        p.flow(thunder_params.flowSpd); //*** */
-        p.move();
-        p.age();
-        p.check_boundary();
-        p.update_opacity();
-        p.remove();
+        if (p.isBasic == true) {
+            p.move();
+            p.age();
+            p.remove();
+        }
+        else {
+            p.flow(thunder_params.flowSpd); //***
+            p.move();
+            p.age();
+            p.check_boundary();
+            p.update_opacity();
+            p.remove();
+        }
     }
 }
 function add_Lightning(possibility) {
@@ -245,15 +290,19 @@ function generate_new_particle() {
 function fire_update_Ps() {
     for (let i = 0; i < particles.length; i++) {
         let p = particles[i];
-        p.flow();
-        p.moveup();
-        p.move();
-        p.apply_outsideForce(1);
-        p.update_opacity(fire_params.opacityAdj);
-        p.age();
-        if (p.isDone || p.pos.y > params_basic.WORLD_HEIGHT / 2) {
-            particles.splice(i, 1);
-            i--; // not flipped version
+        if (p.isBasic == true) {
+            p.move();
+            p.age();
+            p.remove();
+        }
+        else {
+            p.flow();
+            p.moveup();
+            p.move();
+            p.apply_outsideForce(1);
+            p.update_opacity(fire_params.opacityAdj);
+            p.age();
+            p.remove();
         }
     }
 }
@@ -316,13 +365,17 @@ function lake_generate_Ps() {
 function lake_update_Ps() {
     for (let i = 0; i < particles.length; i++) {
         let p = particles[i];
-        p.flow();
-        p.move();
-        p.age();
-        p.update_opacity();
-        if (p.isDone) {
-            particles.splice(i, 1);
-            i--;
+        if (p.isBasic == true) {
+            p.move();
+            p.age();
+            p.remove();
+        }
+        else {
+            p.flow();
+            p.move();
+            p.age();
+            p.update_opacity();
+            p.remove();
         }
     }
 }
