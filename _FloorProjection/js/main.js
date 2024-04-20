@@ -11,9 +11,12 @@
 //   the cirlce spread out and particles disappear
 // reture to phase 1, starts a new cycle
 
-// ------------------------ TODO --------------------
+// ------------------------ problems --------------------
+// phase 2 has a sudden change on the rotation speed
 // why phase 5's vel is set automatically ??
-// restart sometimes not working well (?)
+// restart sometimes not working well
+//   -- after restart - the inital rotation speed of phase 2 is fast
+//   -- after restar sometime the initial circle is not pausing (?)
 
 let params = {
   particleNum: 0,
@@ -47,10 +50,10 @@ let params = {
   phase2_particleNumber: 5000,
   phase2_lifeReductionMin: 0.003,
   phase2_lifeReductionMax: 0.05,
-  phase2_rotationSpeedTop: 0.5,
+  phase2_rotationSpeedTop: 0.3,
   phase2_rotationSpeedAcc: 0.00001,
-  phase2_rotationParVelRange: 0.1,
-  phase2_parFlowSpd: 1,
+  phase2_rotationParVelRange: 0.4,
+  phase2_parFlowSpd: 3,
   phase2_spreadRad: 0,
   phase2_spreadSpd: 0.0005,
   phase2_stage2Time: 500, // wait until spread
@@ -377,7 +380,11 @@ function phase1_updateParticles() {
 
 // ====================== phase 2 ==========================
 function phase2_Rotation() {
-  if (phase2stage2Start) {
+  console.log(rotationSpeed)
+  if (phase2stage2Start == false) {
+    rotationBagua();
+  }
+  else {
     circleThreshold += 0.005;
     while (particles.length < params.phase2_particleNumber) {
       let angle, x, y;
@@ -409,6 +416,9 @@ function phase2_Rotation() {
         if (rotationSpeed < params.phase2_rotationSpeedTop) {
           rotationSpeed += params.phase2_rotationSpeedAcc;
         }
+        else {
+          rotationSpeed = params.phase2_rotationSpeedTop;
+        }
         let rotatedX = x * mCos(rotationAngle) - y * mSin(rotationAngle);
         let rotatedY = x * mSin(rotationAngle) + y * mCos(rotationAngle);
         x = rotatedX;
@@ -423,9 +433,6 @@ function phase2_Rotation() {
         spread = true;
       }
     }
-  }
-  else {
-    rotationBagua();
   }
 }
 
@@ -447,6 +454,9 @@ function rotationBagua() {
     let rotationAngle = -radians(frame * rotationSpeed) + init_randomAngle;
     if (rotationSpeed < params.phase2_rotationSpeedTop) {
       rotationSpeed += params.phase2_rotationSpeedAcc;
+    }
+    else {
+      rotationSpeed = params.phase2_rotationSpeedTop;
     }
     let rotatedX = x * mCos(rotationAngle) - y * mSin(rotationAngle);
     let rotatedY = x * mSin(rotationAngle) + y * mCos(rotationAngle);

@@ -131,7 +131,7 @@ class WaterParticle extends ParticleBasic {
     }
 }
 
-class WaterLineClass {
+class WaterLine {
     constructor() {
         this.pos = createVector();
         this.moveDirection = random()
@@ -146,7 +146,7 @@ class WaterLineClass {
         return this;
     }
     add_NewParticle() {
-        let p_posy = random(-params_basic.WORLD_DEPTH / 2, params_basic.WORLD_HEIGHT / 2);
+        let p_posy = random(-params_basic.WORLD_HEIGHT / 2, params_basic.WORLD_HEIGHT / 2);
         let xFreq = this.pos.x * water_params.BendDifference
         let yFreq = p_posy * water_params.BendLength + frame * this.spd;
         let noiseWave = map(noise(yFreq, xFreq), 0, 1, - water_params.BendMagnitude, water_params.BendMagnitude); // 弯曲的变换

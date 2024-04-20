@@ -1,4 +1,4 @@
-// set_life_reduction(val)???????
+// set_life_reduction(val)
 
 let params = {
   PARTICLE_NUMBER: 6000,
@@ -15,6 +15,15 @@ let params = {
   distributionFreq: 0.02, // 火苗更大/更细小 // big = small // frequency for noise postions
   // upper fire
   areaSize: 0.75,
+  // move
+  flowSpd: 0.008,
+  moveupSpd: 1,
+  flowForceX: 15,
+  flowForceY: 10,
+  flowForceZ: 15,
+  opacityAdj: 0.1,
+  lifeReductionMin: 0.001,
+  lifeReductionMax: 0.007,
 };
 
 
@@ -23,6 +32,7 @@ let control = {
   Time: 5, // acceleration
   Space: 5,
   Flow: 5,
+  ForceX: 0, // for Fire
 }
 
 
@@ -48,7 +58,7 @@ function setupThree() {
 
   let FactorsParticles = gui.addFolder("Particles_Factors");
   FactorsParticles.add(params, "lifeSpan", 0.5, 3).step(0.1);
-  FactorsParticles.add(params, "proportion", 0, 1).step(0.01);
+  // FactorsParticles.add(params, "opacityAdj", 0, 1).step(0.01);
 
   let FactorsLower = gui.addFolder("LOWER_FIRE_Factors");
   FactorsLower.add(params, "distributionFactor", 1, 5).step(0.1);
@@ -63,10 +73,11 @@ function setupThree() {
   ControlFolder.add(control, "Time", 0, 10, 0.1);
   ControlFolder.add(control, "Space", 0, 10, 0.1);
   ControlFolder.add(control, "Flow", 0, 10, 0.1);
-
+  ControlFolder.add(control, "ForceX", -5, 5, 0.1);
 }
 
 function updateThree() {
+  controller();
   // set GUI variables
   let c = color(params.color);
 
@@ -86,7 +97,8 @@ function updateThree() {
     p.flow();
     p.moveup();
     p.move();
-    // p.modify_life();
+    p.apply_outsideForce(1);
+    p.update_opacity(params.opacityAdj);
     p.age();
     if (p.isDone || p.pos.y > params.WORLD_HEIGHT / 2) {
       particles.splice(i, 1);
@@ -103,9 +115,9 @@ function updateThree() {
     positionArray[ptIndex + 0] = p.pos.x;
     positionArray[ptIndex + 1] = p.pos.y;
     positionArray[ptIndex + 2] = p.pos.z;
-    colorArray[ptIndex + 0] = p.color.r * p.lifespan;
-    colorArray[ptIndex + 1] = p.color.g * p.lifespan;
-    colorArray[ptIndex + 2] = p.color.b * p.lifespan;
+    colorArray[ptIndex + 0] = p.color.r * p.opacity;
+    colorArray[ptIndex + 1] = p.color.g * p.opacity;
+    colorArray[ptIndex + 2] = p.color.b * p.opacity;
   }
   pointCloud.geometry.setDrawRange(0, particles.length);
   pointCloud.geometry.attributes.position.needsUpdate = true;
@@ -151,12 +163,13 @@ function generate_new_particle() {
   let noiseValue = noise(noiseFreq);
   let threshold = map(pow(noiseValue, powFactor), 0, 1, 0, 1);
   let lifeReduction = map(noise(noiseFreq), 0, 1, 0.007, 0.001);
-  let moveUp = map(noise(noiseFreq), 0, 1, 0, 1);
+  let moveUp = map(noiseValue, 0, 1, 0, 1);
   if (random(1) < threshold) {
-    let p = new ParticleBasic()
+    let p = new Particle()
       .setPos(x, 0 - params.WORLD_HEIGHT / 2, 0)
       .set_life_reduction(lifeReduction)
-      .set_move_up(moveUp);
+      .set_move_up(moveUp)
+      .set_forceScl(noiseValue);
     particles.push(p);
   }
 }
@@ -169,13 +182,14 @@ function add_upper_points() {
   // let xFreq = x * distributionFreq + frame * 0.005;
   let yFreq = y * distributionFreq - frame * 0.005;
   let noiseValue = noise(xFreq, yFreq);
-  let lifeReduction = map(noiseValue, 0, 1, 0.007, 0.001);
+  let lifeReduction = map(noiseValue, 0, 1, params.lifeReductionMin, params.lifeReductionMax);
   let moveUp = map(noiseValue, 0, 1, 0, 1);
   if ((noiseValue > params.areaSize)) {
-    let p = new ParticleBasic()
+    let p = new Particle()
       .setPos(x, y, 0)
       .set_life_reduction(lifeReduction)
-      .set_move_up(moveUp);
+      .set_move_up(moveUp)
+      .set_forceScl(noiseValue);
     particles.push(p);
   }
 }
@@ -194,7 +208,7 @@ class Particle {
     this.lifespan = params.lifeSpan;
     this.lifeReduction = 0;
     this.isDone = false;
-
+    this.opacity = 1;
     this.color = {
       r: 255,
       g: 255,
@@ -205,7 +219,7 @@ class Particle {
     this.pos = createVector(x, y, z);
     return this;
   }
-  set_life_reduction(val) { // ??????????????????????why the only number
+  set_life_reduction(val) {  // need overwrite
     this.lifeReduction = val;
     return this;
   }
@@ -231,12 +245,28 @@ class Particle {
     this.mass = this.scl.x * this.scl.y * this.scl.z;
     return this;
   }
+  set_forceScl(val) {
+    this.forceScl = val;
+    return this;
+  }
+  update_opacity(range) {
+    if (this.lifespan < range) {
+      let xFreq = this.pos.x * 0.003 + frame * 0.05;
+      let yFreq = this.pos.y * 0.003 + frame * 0.05;
+      let zFreq = this.pos.z * 0.005 + frame * 0.05;
+      let opcacityReduction = noise(xFreq, yFreq, zFreq);
+      this.opacity -= opcacityReduction;
+    }
+    else {
+      this.opacity = this.lifespan;
+    }
+  }
   move() {
     this.vel.add(this.acc);
     this.pos.add(this.vel);
     this.acc.mult(0);
   }
-  applyForce(f) {
+  apply_force(f) {
     let force = f.copy();
     force.div(this.mass);
     this.acc.add(force);
@@ -257,89 +287,66 @@ class Particle {
     let xFreq = this.pos.x * 0.03 + frame * 0.05;
     let yFreq = this.pos.y * 0.05 + frame * 0.05;
     let zFreq = this.pos.z * 0.05 + frame * 0.05;
-    let noiseValue1 = map(noise(xFreq, yFreq, zFreq), 0.0, 1.0, -15, 15);
-    let noiseValue2 = map(noise(xFreq + 1000, yFreq + 1000, zFreq + 1000), 0.0, 1.0, -10, 10);
-    let noiseValue3 = map(noise(xFreq + 2000, yFreq + 2000, zFreq + 2000), 0.0, 1.0, -15, 15);
+    let noiseValue1 = map(noise(xFreq, yFreq, zFreq), 0.0, 1.0, -params.flowForceX, params.flowForceX);
+    let noiseValue2 = map(noise(xFreq + 1000, yFreq + 1000, zFreq + 1000), 0.0, 1.0, - params.flowForceY, params.flowForceY);
+    let noiseValue3 = map(noise(xFreq + 2000, yFreq + 2000, zFreq + 2000), 0.0, 1.0, -params.flowForceZ, params.flowForceZ);
     let force = new p5.Vector(noiseValue1, noiseValue2, noiseValue3);
     force.normalize();
-    force.mult(0.008);
-    this.applyForce(force);
+    force.mult(params.flowSpd);
+    this.apply_force(force);
   }
-
-  // flow() {
-  //   let xFreq = this.pos.x * 0.05 + frame * 0.005;
-  //   let yFreq = this.pos.y * 0.05 + frame * 0.005;
-  //   let zFreq = this.pos.z * 0.05 + frame * 0.005;
-  //   let noiseValue = map(noise(xFreq, yFreq, zFreq), 0.0, 1.0, -1.0, 1.0);
-  //   let force = new p5.Vector(cos(frame * 0.005), sin(frame * 0.005), sin(frame * 0.005));
-  //   force.normalize();
-  //   force.mult(noiseValue * 0.01);
-  //   this.applyForce(force);
-  // }
 
   moveup() {
-    // let freq = this.pos.x * 0.01 + frame * 0.005;
-    // let noiseValue = map(noise(freq), 0, 1, 0, 1);
     let forceUp = new p5.Vector(0, 1, 0);
     forceUp.mult(0.01);
-    forceUp.mult(this.moveUp)
-    // forceUp.mult(noiseValue);
-    this.applyForce(forceUp);
+    forceUp.mult(this.moveUp * params.moveupSpd)
+    this.apply_force(forceUp);
   }
 
+  apply_outsideForce(scl) {
+    let force = createVector(control.ForceX * this.forceScl, 0);
+    let scale = 0;
+    if (this.forceScl > 0.5) {
+      scale = map(this.forceScl, 0.5, 1, 0, 1);
+      force.mult(scl * 0.005 * scale);
+      this.apply_force(force);
+    }
+  }
 
-  // modify_life() {
-  //   let xFreq = this.pos.x * 0.05 + frame * 0.05;
-  //   let yFreq = this.pos.y * 0.05 + frame * 0.05;
-  //   let zFreq = this.pos.z * 0.05 + frame * 0.05;
-  //   let noiseValue = map(noise(xFreq, yFreq, zFreq), 0, 1, -0.001, 0.003);
-  //   this.lifespan += noiseValue;
-  // }
 }
 
 
 
 function controller() {
   // weight
-  if (control.Weight <= 5) {
-    params.moveRangeMin = map(control.Weight, 0, 5, 50, 100);
-    params.moveRangeMax = map(control.Weight, 0, 5, 200, 400);
-  }
-  else {
-    params.moveRangeMin = map(control.Weight, 5, 10, 300, 900);
-    params.moveRangeMax = map(control.Weight, 5, 10, 500, 2000);
-    params.moveThreshold = map(control.Weight, 5, 10, 0.5, 0.3);
+  if (control.Weight < 5) {
+    params.opacityAdj = map(control.Weight, 0, 5, 0.5, 0);
   }
 
-  // time // 变换不连贯
-  if (control.Time <= 5) {
-    params.WaveFrameFreq = map(control.Time, 0, 5, 0.002, 0.004);
-    // params.WaveRadFreq = map(control.Time, 0, 5, 0.002, 0.004);
+  // time 
+  if (control.Time < 5) {
+    params.moveupSpd = map(control.Time, 0, 5, 0.7, 1.2);
+    params.lifeSpan = 1;
+    params.flowForceX = 15;
   }
   else {
-    params.WaveFrameFreq = map(control.Time, 5, 10, 0.004, 0.01);
-    // params.WaveRadFreq = map(control.Time, 5, 10, 0.004, 0.01);
+    params.moveupSpd = map(control.Time, 5, 10, 1.2, 3);
+    params.lifeSpan = map(control.Time, 5, 10, 1, 0.7);
   }
 
   // Space
   if (control.Space <= 5) {
-    params.breathAmplMin = map(control.Space, 0, 5, 10, 25);
-    params.breathAmplMax = map(control.Space, 0, 5, 50, 100);
+    params.distributionFreq = map(control.Space, 0, 5, 0.06, 0.02);
   }
   else {
-    params.breathAmplMin = map(control.Space, 5, 10, 25, 40);
-    params.breathAmplMax = map(control.Space, 5, 10, 100, 500);
+    params.distributionFreq = map(control.Space, 5, 10, 0.02, 0.01);
   }
 
   // flow
-  if (control.Flow <= 5) {
-    params.breathFreq = map(control.Flow, 0, 5, 0.01, 0.03);
-    params.lifeReductionMin = map(control.Flow, 0, 5, 0.004, 0.006);
-    params.lifeReductionMax = map(control.Flow, 0, 5, 0.01, 0.02);
+  if (control.Flow > 8) { // flow value big - not fluent
+    params.areaSize = map(control.Flow, 8, 10, 1, 0.6);
   }
   else {
-    params.breathFreq = map(control.Flow, 5, 10, 0.03, 0.05);
-    params.lifeReductionMin = map(control.Flow, 5, 10, 0.006, 0.01);
-    params.lifeReductionMax = map(control.Flow, 5, 10, 0.02, 0.05);
+    params.areaSize = 1;
   }
 }

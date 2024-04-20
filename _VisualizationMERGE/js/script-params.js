@@ -63,8 +63,6 @@ let mountain_params = {
 };
 
 
-
-
 // ======================== EARTH ==========================
 
 let earth_params = {
