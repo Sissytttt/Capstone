@@ -93,7 +93,7 @@ function onKeyDown(event) {
     //   heaven_GUI_MOVEMENT();
     //   mode = "HEAVEN";
     //   play = true;
-    // transition_Ps();
+    //   transition_Ps();
     //   thunder_setup_thunders();
     //   thunder_generate_Ps();
     //   break;
@@ -102,7 +102,7 @@ function onKeyDown(event) {
     //   wind_GUI_MOVEMENT();
     //   mode = "WIND";
     //   play = true;
-    // transition_Ps();
+    //   transition_Ps();
     //   thunder_setup_thunders();
     //   thunder_generate_Ps();
     //   break;

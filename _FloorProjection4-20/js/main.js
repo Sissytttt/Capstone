@@ -11,14 +11,12 @@
 //   the cirlce spread out and particles disappear
 // reture to phase 1, starts a new cycle
 
-/* ------------------------ problems --------------------
-1. phase 2 has a sudden change on the rotation speed
-2. why phase 5's vel is set automatically ??
-3. restart sometimes not working well
-  -- after restart - the inital rotation speed of phase 2 is fast
-  -- after restar sometime the initial circle is not pausing (?)
-4. phase3 transmit - p.check_boundary() has some problem
-*/
+// ------------------------ problems --------------------
+// phase 2 has a sudden change on the rotation speed
+// why phase 5's vel is set automatically ??
+// restart sometimes not working well
+//   -- after restart - the inital rotation speed of phase 2 is fast
+//   -- after restar sometime the initial circle is not pausing (?)
 
 let params = {
   particleNum: 0,
@@ -66,7 +64,7 @@ let params = {
   phase3_lifeReductionMin: 0.003,
   phase3_lifeReductionMax: 0.01,
   phase3_stage1Time: 100,
-  phase3_moveUpSpd: 0.08,
+  phase3_moveUpSpd: 0.01,
   phase3_particleReductionSpd: 10,
   // phase 4
   phase4_particleNumber: 2000,
@@ -373,7 +371,10 @@ function phase1_updateParticles() {
     p.rotate();
     p.age();
     p.phase5_age();
-    p.remove();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
   }
 }
 
@@ -493,7 +494,10 @@ function phase2_updateParticles() {
         phase2Finish = true;
       }
     }
-    p.remove();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
   }
 }
 
@@ -518,6 +522,7 @@ function phase3_generateParticles() {
   }
   if (frame - phase3StartTime > params.phase3_stage1Time) {
     phase3transmit = true;
+
   }
 }
 
@@ -528,20 +533,23 @@ function phase3_updateParticles() {
   else {
     phase3transmit = false;
     phase3Finish = true;
+    // phase4Start = true;
   }
   for (let i = 0; i < particles.length; i++) {
     let p = particles[i];
     if (phase3transmit) {
-      p.move_up(random(params.phase3_moveUpSpd));
-      // p.check_boundary();
+      p.move_up(params.phase3_moveUpSpd);
     }
     else {
       p.flow(10);
-      p.age();
     }
     p.move();
     p.rotate();
-    p.remove();
+    p.age();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
   }
 }
 
@@ -569,7 +577,10 @@ function phase4_updateParticles() {
     p.age();
     p.flow(5);
     p.move();
-    p.remove();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
   }
 
 }
@@ -583,7 +594,10 @@ function phase5_updateParticles_disappear() {
     p.flow();
     p.move();
     p.age();
-    p.remove();
+    if (p.isDone) {
+      particles.splice(i, 1);
+      i--;
+    }
     p.phase5_age();
     p.repulse_from(0, 0, 0);
   }
@@ -709,20 +723,6 @@ class Particle {
       this.isDone = true;
     }
   }
-  check_boundary() {
-    if (this.pos.x > params.WORLD_WIDTH / 2 || this.pos.x < -params.WORLD_WIDTH / 2
-      || this.pos.y > params.WORLD_HEIGHT / 2 || this.pos.y < -params.WORLD_HEIGHT / 2) {
-      this.isDone = true;
-    }
-  }
-  remove() {
-    if (this.isDone) {
-      let index = particles.indexOf(this);
-      if (index > -1) {
-        particles.splice(index, 1);
-      }
-    }
-  }
   set_breathCen() { }
   set_breathPos() { }
   set_breathFreq() { }
@@ -787,6 +787,7 @@ class BreathParticle extends Particle {
       this.isDone = true;
     }
   }
+
   breath() {
     let moveDist = mCos(frame * this.breathFrequency) * this.moveRange + this.moveRange;
     let updatingR = params.phase4_circle_r + moveDist;
@@ -794,6 +795,8 @@ class BreathParticle extends Particle {
     let yPos = this.breathCenter.y + mCos(this.angle) * updatingR;
     this.pos.set(xPos, yPos, 0);
   }
+
+
   repulse_from(x, y, z) {
     let target = new p5.Vector(x, y, z);
     let force = p5.Vector.sub(this.pos, target);
@@ -805,6 +808,8 @@ class BreathParticle extends Particle {
   }
 }
 
+
+
 function setupFastSinCos() {
   for (let i = 0; i < sinCosResolution; i++) {
     let deg = map(i, 0, sinCosResolution, 0, 360);
@@ -813,12 +818,14 @@ function setupFastSinCos() {
     cosArray.push(cos(rad));
   }
 }
+
 function mSin(rad) {
   let angle = rad % TWO_PI;
   if (angle < 0) angle += TWO_PI;
   let index = floor(map(angle, 0, TWO_PI, 0, sinCosResolution));
   return sinArray[index];
 }
+
 function mCos(rad) {
   let angle = rad % TWO_PI;
   if (angle < 0) angle += TWO_PI;
