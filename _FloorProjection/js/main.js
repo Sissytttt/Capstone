@@ -100,6 +100,7 @@ let sinArray = [];
 let cosArray = [];
 let sinCosResolution = 360 * 2; // 720
 // sound
+let audioListener;
 let SingingBowl0, SingingBowl1, SingingBowl2, SingingBowl3, SingingBowl4, SingingBowl5, SingingBowl_high;
 //phase 1
 let phase1_step = 1;
@@ -128,9 +129,6 @@ let phase4Finish = false;
 let phase5Finish = false;
 
 
-let audioListener;
-
-
 // random initialization
 let init_randomAngle;
 
@@ -138,7 +136,8 @@ function setupThree() {
   audioListener = new THREE.AudioListener();
   camera.add(audioListener);
   get_SingingBowl_low('assets/sound/SingingBowl_low.MP3');
-  get_SingingBowl_high('assets/sound/SingingBowl_high.MP3')
+  get_SingingBowl_high('assets/sound/SingingBowl_high.MP3');
+  playloop_BackgroundMusic()
   setupFastSinCos();
   init_randomAngle = radians(random(360));
   if (testMode == true) { // fast speed

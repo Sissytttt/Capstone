@@ -48,16 +48,34 @@ function get_SingingBowl_high(path) {
             console.log('An error happened');
         }
     );
-    console.log("get SingingBowl_high")
+    // console.log("get SingingBowl_high")
 }
 
+function playloop_BackgroundMusic() {
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
 
+    // create a global audio source
+    const sound = new THREE.Audio(listener);
+
+    // load a sound and set it as the Audio object's buffer
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load('assets/sound/backgroundTest.MP3', function (buffer) {
+        sound.setBuffer(buffer);
+        sound.setLoop(true);
+        sound.setVolume(1);
+        sound.play();
+    });
+
+    console.log("play Background Music")
+}
 
 function playOnce_SingingBowl(singingBowl) {
     if (!singingBowl.isPlaying) {
         singingBowl.play();
     }
 }
+
 function playSingingBowlBasedOnPhase() {
     console.log("case", phase1_step)
     switch (phase1_step) {
